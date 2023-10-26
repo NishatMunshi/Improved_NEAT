@@ -64,9 +64,7 @@ public:
             nonDominantParent = father;
         }
         child = new Genome(*dominantParent);
-        if (dominantParent->numberOfLayersUsed not_eq nonDominantParent->numberOfLayersUsed)
-        {
-        }
+        
         // we keep the dominant parent's layer choice and add extra neurons nondominant parent may have
         for (const auto &[id, layerIndex] : nonDominantParent->usedNeurons)
         {
