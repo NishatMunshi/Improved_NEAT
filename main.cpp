@@ -12,16 +12,15 @@ int main()
 
     while (window.isOpen())
     {
-        // event check
-        sf::Event _event;
-        while (window.pollEvent(_event))
-        {
-            if (_event.type == sf::Event::Closed)
-                window.close();
-        }
-
         for (unsigned generation = 0; generation < 20000; ++generation)
         {
+            // event check
+            sf::Event _event;
+            while (window.pollEvent(_event))
+            {
+                if (_event.type == sf::Event::Closed)
+                    window.close();
+            }
 
             mySpecies.play_one_generation();
 
