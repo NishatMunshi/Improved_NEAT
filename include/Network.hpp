@@ -22,6 +22,8 @@ public:
             _neuronPool.at(id)->g_layerIndex = layerIndex;
             _neuronPool.at(id)->indexInLayer = m_neuralNetWork.at(layerIndex).size();
 
+            // std::cout << "here";
+
             m_neuralNetWork.at(layerIndex).insert_or_assign(id, _neuronPool.at(id));
         }
         // add synapses to them

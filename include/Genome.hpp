@@ -14,8 +14,8 @@ public:
     float score;
 
 private:
-    static std::set<NeuronID> m_inputNeuronIDs;  // need to keep track to not mess up the input layer
-    static std::set<NeuronID> m_outputNeuronIDs; // need to keep track to not mess up the output layer
+    // static std::set<NeuronID> m_inputNeuronIDs;  // need to keep track to not mess up the input layer
+    // static std::set<NeuronID> m_outputNeuronIDs; // need to keep track to not mess up the output layer
 
 public:
     // this constructor is called only when starting the species
@@ -27,14 +27,14 @@ public:
         {
             const auto sensorNeuronID = inputIndex;
             usedNeurons.insert_or_assign(sensorNeuronID, 0);
-            m_inputNeuronIDs.insert(sensorNeuronID);
+            // m_inputNeuronIDs.insert(sensorNeuronID);
 
             for (unsigned outputIndex = 0; outputIndex < _numberOfOutputs; ++outputIndex)
             {
                 const auto motorNeuronID = _numberOfInputs + outputIndex;
                 // since it is a map, duplicates are already taken care of
                 usedNeurons.insert_or_assign(motorNeuronID, 1);
-                m_outputNeuronIDs.insert(motorNeuronID);
+                // m_outputNeuronIDs.insert(motorNeuronID);
 
                 const auto id = SynapseID(sensorNeuronID, motorNeuronID);
                 const auto synapse = Synapse(_neuronPool.at(motorNeuronID), random_float());
@@ -55,78 +55,32 @@ public:
 
         if (father->numberOfLayersUsed >= _mother->numberOfLayersUsed)
         {
-            child = new Genome(*father);
             dominantParent = father;
             nonDominantParent = _mother;
         }
         else
         {
-            child = new Genome(*_mother);
             dominantParent = _mother;
             nonDominantParent = father;
         }
-
-        // child must use all neurons used by father and mother but their layer indeces may be different
-        // carefully take care of input and output layer
+        child = new Genome(*dominantParent);
+        if (dominantParent->numberOfLayersUsed not_eq nonDominantParent->numberOfLayersUsed)
+        {
+        }
+        // we keep the dominant parent's layer choice and add extra neurons nondominant parent may have
         for (const auto &[id, layerIndex] : nonDominantParent->usedNeurons)
         {
-            const auto matched = dominantParent->usedNeurons.count(id);
-            if (matched)
+            if (not child->usedNeurons.count(id))
             {
-                // consider nondominant's choice only if this isnt an input or output neuron
-                bool unchangable = dominantParent->m_outputNeuronIDs.count(id) or dominantParent->m_inputNeuronIDs.count(id);
-                if (not unchangable)
-                {
-                    // decide whether to use nondominant's layer choice
-                    auto decision = random_bool.generate();
-                    if (decision)
-                    {
-                        child->usedNeurons.at(id) = layerIndex;
-                    }
-                }
-            }
-            // if it did not match, it must be a new one and we have to insert it
-            else
-            {
+                // this means child does not have this neuron and must use it
                 child->usedNeurons.insert_or_assign(id, layerIndex);
             }
-        }
-
-        // at this point we need to check if child contains any empty layer
-        // if yes we need to shift every layer
-        for (unsigned layerIndex = 0; layerIndex < dominantParent->numberOfLayersUsed; ++layerIndex)
-        {
-            unsigned count = 0;
-            for (const auto &[id, index] : child->usedNeurons)
-            {
-                if (index == layerIndex)
-                    count++;
-            }
-            // at this point if count is zero we know layer with index = layerIndex is empty
-            // then shift all layers after it by -1;
-            if (count == 0)
-            {
-                bool removedSomething = false;
-                for (auto &[id, index] : child->usedNeurons)
-                {
-                    if (index > layerIndex)
-                    {
-                        index--;
-                        removedSomething = true;
-                    }
-                }
-                // at this point record the fact that we removed a layer from child
-                if (removedSomething)
-                    child->numberOfLayersUsed--;
-            }
-
-            //
         }
 
         // child must use all synapseIndeces used by father and mother
         for (const auto &[id, synapse] : nonDominantParent->genes)
         {
-            const auto matched = dominantParent->genes.count(id);
+            const auto matched = child->genes.count(id);
             if (matched)
             {
                 // decide whether to use nondominant's gene
@@ -195,8 +149,10 @@ public: // mutations
         const auto newSynapse2 = Synapse(endingNeuronPtr, random_float());
         const auto newGene2 = std::make_pair(newSynapseId2, newSynapse2);
 
+        const int startingLayerIndex = usedNeurons.at(startingNeuronID);
+        const int endingLayerIndex = usedNeurons.at(endingNeuronID);
         // compute what new neuron's LayerIndex will be
-        auto newLayerIndex = (startingNeuronPtr->g_layerIndex + endingNeuronPtr->g_layerIndex + 1) / 2;
+        auto newLayerIndex = (startingLayerIndex + endingLayerIndex + 1) / 2;
         //  if it wants layer 0, we cant allow that
         if (newLayerIndex == 0)
         {
@@ -206,8 +162,6 @@ public: // mutations
         // decide whether we need to insert a layer
         // we insert  a layer if the starting neuron and eding neuron are only one layer apart
         // OR the layer it wants is the output layer
-        const int startingLayerIndex = usedNeurons.at(startingNeuronID);
-        const int endingLayerIndex = usedNeurons.at(endingNeuronID);
 
         auto needLayer = std::abs(startingLayerIndex - endingLayerIndex) == 1 or (newLayerIndex == numberOfLayersUsed - 1);
         if (needLayer)
@@ -229,5 +183,5 @@ public: // mutations
     }
 };
 
-std::set<NeuronID> Genome::m_inputNeuronIDs = std::set<NeuronID>();
-std::set<NeuronID> Genome::m_outputNeuronIDs = std::set<NeuronID>();
+// std::set<NeuronID> Genome::m_inputNeuronIDs = std::set<NeuronID>();
+// std::set<NeuronID> Genome::m_outputNeuronIDs = std::set<NeuronID>();

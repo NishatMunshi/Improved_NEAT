@@ -10,4 +10,4 @@ run:
 	.\main
 
 clean:
-	rm -f main *.o
+	rm main.o
