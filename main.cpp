@@ -5,7 +5,7 @@ int main()
 {
     // init the window
     sf::RenderWindow window(sf::VideoMode(2 * WINDOW_DIMENSION, WINDOW_DIMENSION), "NEAT");
-    window.setFramerateLimit(60);
+    // window.setFramerateLimit(60);
 
     const unsigned population = 200;
 
