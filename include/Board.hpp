@@ -1,37 +1,22 @@
 #pragma once
-// #include<random>
-// #include<limits.h>
-// #include<ctime>
-#include "Network.hpp"
+#include <bits/stdc++.h>
+#include "../libraries/randomNumberGenerator.hpp"
 
-using namespace std;
+#include "E:/programming_tools/SFML-2.5.1/include/SFML/Graphics.hpp"
 
-// int randomInRange(int start, int end){
-//     // random_device randomDevice;
-//     unsigned seed = static_cast<unsigned>(time(nullptr));
-//     mt19937 generator(seed);
-//     uniform_int_distribution<int> distribution(start, end);
-//     return distribution(generator);
-// }
 class Board
 {
     // REPRESENTATIONS:
-    // BODY PARTS: head -> length, tail -> 1, always greater than 0
+    // BODY PARTS: m_headPos -> snakeLength, tail -> 1, always greater than 0
     // FOOD: -1
-    // EMPTY SPACE: 0
+    // m_emptyCellCount SPACE: 0
     enum CellType : int
     {
         FOOD = -1,
         EMPTY = 0,
         TAIL = 1
     };
-    // -------------
-    // GO-UP: 0
-    // GO-RIGHT: 1
-    // GO-DOWN: 2
-    // GO-LEFT: 3
-    // -------------
-    enum Move : unsigned
+    enum MoveCode : unsigned
     {
         UP,
         RIGHT,
@@ -45,44 +30,101 @@ class Board
         FOOD,
         EMPTY
     };
-    const int WIDTH, HEIGHT;
-    vector<vector<int>> board;
 
-    pair<int, int> head;
-    pair<int, int> food;
-
-    int empty;
-
-    pair<int, int> wrapIndex(int flattenedIndex)
+    struct Vector2
     {
-        // cout << "Here in wrap Index" << endl;
-        return {flattenedIndex / WIDTH, flattenedIndex % WIDTH};
+        int x, y; // need int , not unsigned
+        Vector2(const int _x, const int _y) : x(_x), y(_y) {}
+        Vector2(void) : x(0), y(0) {}
+        inline Vector2 operator+(const Vector2 &_other) const
+        {
+            return Vector2(this->x + _other.x, this->y + _other.y);
+        }
+    };
+    using Coordinates = Vector2;
+
+    const unsigned m_width, m_height;
+
+    Coordinates m_headPos;
+    Coordinates m_foodPos;
+
+    struct Grid
+    {
+    private:
+        std::vector<std::vector<int>> m_grid; // indexed by coordinates (y, x)
+    public:
+        Grid(void) {}
+        Grid(const unsigned _width, const unsigned _height)
+        {
+            for (int i = 0; i < _height; i++)
+            {
+                std::vector<int> row(_width, CellType::EMPTY);
+                m_grid.push_back(row);
+            }
+        }
+
+    public:
+        inline int at(const Coordinates &_coords) const // const variant of at() used for reading
+        {
+            return m_grid.at(_coords.y).at(_coords.x);
+        }
+        inline int &at(const Coordinates &_coords) // non const variant of at used for writing
+        {
+            return m_grid.at(_coords.y).at(_coords.x);
+        }
+        void clear(void)
+        {
+            for (auto &row : m_grid)
+            {
+                for (auto &cell : row)
+                {
+                    cell = CellType::EMPTY;
+                }
+            }
+        }
+    };
+
+    Grid m_board;
+
+    unsigned m_emptyCellCount;
+
+    using MovementDirection = Vector2;
+    const std::array<MovementDirection, 4> m_possibleMovementDirections = {Vector2(0, -1), Vector2(1, 0), Vector2(0, 1), Vector2(-1, 0)};
+
+    const std::array<Vector2, 8> m_visionDirections = {Vector2(0, -1), Vector2(1, -1), Vector2(1, 0), Vector2(1, 1), Vector2(0, 1), Vector2(-1, 1), Vector2(-1, 0), Vector2(-1, -1)};
+
+private:
+    inline Coordinates wrap_index(const int _flattenedIndex) const
+    {
+        return Coordinates(_flattenedIndex % m_width, _flattenedIndex / m_width);
     }
-    int flattenIndex(pair<int, int> wrappedIndex)
+    inline int flatten_index(const Coordinates &_wrappedIndex) const
     {
-        return wrappedIndex.first * WIDTH + wrappedIndex.second;
+        return _wrappedIndex.x + _wrappedIndex.y * m_width;
     }
-    CellStatus checkCellStatus(pair<int, int> index) const
+
+private:
+    CellStatus check_cell_status(const Coordinates &_coordinates) const
     {
-        if (index.first >= HEIGHT || index.first < 0 || index.second >= WIDTH || index.second < 0)
+        if (_coordinates.x >= m_width or _coordinates.x < 0 or _coordinates.y >= m_height or _coordinates.y < 0)
             return CellStatus::WALL;
-        else if (board[index.first][index.second] > 0)
+        else if (m_board.at(_coordinates) > 0)
             return CellStatus::BODY;
-        else if (board[index.first][index.second] == CellType::FOOD)
+        else if (m_board.at(_coordinates) == CellType::FOOD)
             return CellStatus::FOOD;
         else
             return CellStatus::EMPTY;
     }
-    void generateFood()
+    void generate_food(void)
     {
-        // cout << "Here in generate food" << endl;
-        int exIndex = random_32.generate(0, empty - 1);
-        // cout << "Random number between " << 0 << " and " << (empty - 1) << ": " << exIndex << endl;
+        int exIndex = random_32.generate(0, m_emptyCellCount - 1);
         int counter = 0;
+
         while (true)
         {
-            pair<int, int> index = wrapIndex(counter);
-            if (checkCellStatus(index) == CellStatus::BODY)
+            const auto coordinates = wrap_index(counter);
+
+            if (check_cell_status(coordinates) == CellStatus::BODY)
             {
                 counter++;
                 continue;
@@ -92,149 +134,134 @@ class Board
                 break;
             counter++;
         }
-        food = wrapIndex(counter);
-        board[food.first][food.second] = -1;
-        // cout << "Food position: (" << food.first << ", " << food.second << ")" << endl;
+        m_foodPos = wrap_index(counter);
+        m_board.at(m_foodPos) = CellType::FOOD;
+        // cout << "Food position: (" << m_foodPos.x << ", " << m_foodPos.y << ")" << endl;
     }
-    void generateInitials()
+    void generate_initials(void)
     {
         // cout << "Here in generate Initials before random" << endl;
-        int flattenedIndex = random_32.generate(0, empty - 1);
-        head = wrapIndex(flattenedIndex);
-        // cout << "Random Number between " << 0 << " and " << (empty - 1) << ": " << flattenedIndex << ", wrapped index: (" << head.first << ", " << head.second << ")" << endl;
-        length++;
-        empty--;
+        const auto flattenedIndex = random_32.generate(0, m_emptyCellCount - 1);
+        m_headPos = wrap_index(flattenedIndex);
+        // cout << "Random Number between " << 0 << " and " << (m_emptyCellCount - 1) << ": " << _flattenedIndex << ", wrapped _coordinates: (" << m_headPos.x << ", " << m_headPos.y << ")" << endl;
+        snakeLength++;
+        m_emptyCellCount--;
         // cout << "Here in generate Initials after random" << endl;
-        board[head.first][head.second] = length;
+        m_board.at(m_headPos) = snakeLength;
 
         // More work if extra parts required
 
         // Work left above
-        generateFood();
+        generate_food();
     }
 
 public:
-    bool status;
-    int length;
+    bool status; // gameover or not
+    int snakeLength;
 
-    void resetStats()
+    void reset_stats(void)
     {
-        cout << "Here in reset stats" << endl;
-        for (int i = 0; i < board.size(); i++)
-        {
-            for (int j = 0; j < board[0].size(); j++)
-            {
-                board[i][j] = 0;
-            }
-        }
-        empty = WIDTH * HEIGHT;
-        length = 0;
-        generateInitials();
+        // cout << "Here in reset stats" << endl;
+        m_board.clear();
+
+        m_emptyCellCount = m_width * m_height;
+        snakeLength = 0;
+
+        generate_initials();
 
         status = true;
     }
-    Board(int width, int height) : WIDTH(width), HEIGHT(height)
+    Board(const int _width, const int _height) : m_width(_width), m_height(_height)
     {
-        cout << "Here in constructor" << endl;
-        for (int i = 0; i < HEIGHT; i++)
-        {
-            vector<int> row(WIDTH, 0);
-            board.push_back(row);
-        }
-        // empty = WIDTH * HEIGHT;
-        // length = 0;
-        // generateInitials();
-
-        // status = true;
-        resetStats();
+        // cout << "Here in constructor" << endl;
+        m_board = Grid(_width, _height);
+        reset_stats();
     }
 
-    bool play(int move)
+    bool play_one_move(const MoveCode &_move)
     {
-        pair<int, int> possibilities[] = {{-1, 0}, {0, 1}, {1, 0}, {0, -1}};
-        pair<int, int> headNext = {head.first + possibilities[move].first, head.second + possibilities[move].second};
+        const auto headPosNext = m_headPos + m_possibleMovementDirections[_move];
+        const auto nextCellStatus = check_cell_status(headPosNext);
 
-        if (checkCellStatus(headNext) < 2)
+        if (nextCellStatus == CellStatus::WALL or nextCellStatus == CellStatus::BODY) // we will hit a wall or body
         {
             status = false;
             return false;
         }
-        if (board[headNext.first][headNext.second] == -1)
+        else if (nextCellStatus == CellStatus::FOOD)
         {
-            length++;
-            empty--;
-            board[headNext.first][headNext.second] = length;
-            head = headNext;
-            if (empty != 0)
-                generateFood();
+            snakeLength++;
+            m_emptyCellCount--;
+
+            if (m_emptyCellCount not_eq 0)
+                generate_food();
         }
         else
         {
-            pair<int, int> currentIndex = head;
+            auto currentBodyPartCoords = m_headPos;
             while (true)
             {
-                board[currentIndex.first][currentIndex.second]--;
-                if (board[currentIndex.first][currentIndex.second] == 0)
+                // if we are done until tail then break out of the loop
+                if (--m_board.at(currentBodyPartCoords) == CellType::EMPTY)
                     break;
-                pair<int, int> newIndex;
-                for (pair<int, int> &p : possibilities)
+
+                // otherwise we need to check every direction for NEXT bodypart and point currentBodyPartCoords there if we find one
+                const auto thisCellValue = m_board.at(currentBodyPartCoords);
+
+                for (const auto &direction : m_possibleMovementDirections)
                 {
-                    if (checkCellStatus({currentIndex.first + p.first, currentIndex.second + p.second}) == 1 && board[currentIndex.first + p.first][currentIndex.second + p.second] == board[currentIndex.first][currentIndex.second])
+                    const auto checkingCoords = currentBodyPartCoords + direction;
+                    const auto status = check_cell_status(checkingCoords);
+                    const auto checkingCoordsValue = m_board.at(checkingCoords);
+
+                    if (status == CellStatus::BODY and checkingCoordsValue == thisCellValue - 1)
                     {
-                        newIndex.first = currentIndex.first + p.first;
-                        newIndex.second = currentIndex.second + p.second;
+                        currentBodyPartCoords = checkingCoords;
                         break;
                     }
                 }
-                currentIndex = newIndex;
             }
-
-            board[headNext.first][headNext.second] = length;
-            head = headNext;
         }
+
+        m_board.at(headPosNext) = snakeLength;
+        m_headPos = headPosNext;
+
         return true;
     }
-    std::array<float, 24> getNeuralInput() const
+    std::array<float, 24> get_input_for_NN(void) const
     {
-        // directions order:- NORTH, NORTH-EAST, EAST, SOUTH-EAST, SOUTH, SOUTH-WEST, WEST, NORTH-WEST
         // materials order:- WALL, BODY, FOOD
-        pair<int, int> directions[] = {{-1, 0}, {-1, 1}, {0, 1}, {1, 1}, {1, 0}, {1, -1}, {0, -1}, {-1, -1}};
-        vector<vector<int>> toReturn(8, vector<int>(3, INT_MAX));
+        // this order is the same as CellStatus values
+        // which is helpful later when indexing into array
+        std::array<float, 24> returnArray = {3.4e38f}; // init it with max value of float
 
-        int directionIndex = 0;
-        for (const auto &direction : directions)
+        unsigned arrayIndex = 0;
+        for (const auto &direction : m_visionDirections)
         {
-            int distance = 1;
-            pair<int, int> coordinate = {head.first + direction.first, head.second + direction.second};
+            float distance = 1;
+
+            Coordinates coordinates = m_headPos + direction;
             while (true)
             {
-                int cellStatus = checkCellStatus(coordinate);
-                if (cellStatus != 3)
+                const auto cellStatus = check_cell_status(coordinates);
+
+                if (cellStatus not_eq CellStatus::EMPTY)
                 {
-                    toReturn[directionIndex][cellStatus] = distance;
-                    directionIndex++;
+                    returnArray[arrayIndex + cellStatus] = distance;
+                    arrayIndex += 3;
                     break;
                 }
-                distance++;
-                coordinate.first = coordinate.first + direction.first;
-                coordinate.second = coordinate.second + direction.second;
-            }
-        }
 
-        // change into array before return
-        std::array<float, 24> returnArray;
-        unsigned index = 0;
-        for (const auto &direction : toReturn)
-        {
-            for (const auto &cellStatus : direction)
-            {
-                returnArray.at(index++) = static_cast<float>(cellStatus);
+                distance = distance + 1;
+
+                coordinates = coordinates + direction;
             }
         }
         return returnArray;
     }
-    vector<vector<int>> getField() const
+
+public: // GRAPHICS
+    void g_draw(void)
     {
-        return board;
     }
 };
