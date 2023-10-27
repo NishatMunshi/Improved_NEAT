@@ -1,5 +1,6 @@
 #pragma once
 #include "Network.hpp"
+#include "Board.hpp"
 
 #define MUTATION_PROBABILITY 0.1f
 
@@ -14,9 +15,12 @@ private:
     const unsigned m_numberOfOutputs;
     const unsigned m_population;
 
+    Board m_board{BOARD_WIDTH, BOARD_HEIGHT};
+
 public:
     Species(const unsigned _numberOfInputs, const unsigned _numberOfOutputs, const unsigned _population) : m_numberOfInputs(_numberOfInputs), m_numberOfOutputs(_numberOfOutputs), m_population(_population)
     {
+
         assert(_population % 4 == 0);
 
         // make the neurons we will use and save them in the neuronPool
@@ -39,59 +43,64 @@ public:
             // make individual genomes
             m_genePool.push_back(new Genome(_numberOfInputs, _numberOfOutputs, m_neuronPool));
         }
-
     }
 
 public:
-    void play_one_generation(void)
+    void play_one_generation(sf::RenderWindow &_window, const unsigned _generation)
     {
-        std::ifstream file("E:/Code/NEAT/xor.txt");
-
-        std::array<float, NUMBER_OF_INPUTS> inputs;
-        std::array<float, NUMBER_OF_OUTPUTS> label;
-
+        unsigned individualIndex = 0;
         for (const auto &genome : m_genePool)
         {
-            genome->numberOfCorrectAnswers = 0;
-            genome->score = NUMBER_OF_LINES;
+            genome->foodsEaten = 0;
+            genome->score = 1000.f;
+
+            m_board.reset_stats();
 
             // clear every neuron's output synapses container
-            for(const auto&[id, neuron] : m_neuronPool)
+            for (const auto &[id, neuron] : m_neuronPool)
             {
                 neuron->clear_output_synapses();
             }
             Network individualBrain(m_neuronPool, genome);
 
-            for (unsigned line = 0; line < NUMBER_OF_LINES; ++line)
+            for (unsigned movesLeft = 100; movesLeft > 0 and m_board.status; --movesLeft)
             {
-                file >> inputs[0];
-                file >> inputs[1];
-                file >> inputs[2];
-
-                float output;
-                file >> output;
-
-                label[0] = 0;
-                label[1] = 0;
-
-                if (output == 1)
-                    label[1] = 1;
-                else
-                    label[0] = 1;
+                const auto inputs = m_board.get_input_for_NN();
 
                 const auto resultIndex = individualBrain.feed_forward(inputs);
 
-                if ((resultIndex == 0 and label[0] == 1) or (resultIndex == 1 and label[1] == 1))
+                // -------------------------------------
+                std::stringstream ss;
+                ss << "Generation: " << _generation << " Individual: " << individualIndex;
+                _window.setTitle(ss.str());
+
+                sf::Event _event;
+                while (_window.pollEvent(_event))
                 {
-                    genome->numberOfCorrectAnswers++;
+                    if (_event.type == sf::Event::Closed)
+                        _window.close();
+                    abort();
                 }
-                const auto error = individualBrain.calculate_error(label);
-                genome->score -= error;
+
+                _window.clear();
+                individualBrain.g_draw(_window);
+                m_board.g_draw(_window);
+                _window.display();
+                // -------------------------------------
+
+                const auto gameResult = m_board.play_one_move(resultIndex);
+
+                if (gameResult == 20)
+                {
+                    genome->foodsEaten++;
+                }
+                genome->score += gameResult -10; // -10 is the punishment for wasting a move
             }
+            individualIndex++;
         }
     }
 
-    void print_best_scorer(sf::RenderWindow&_window) const
+    void print_best_scorer(void) const
     {
         auto less = [](const Genome *A, const Genome *B)
         {
@@ -102,7 +111,7 @@ public:
         std::cout << "best genome score: " << bestGenome->score << '\n'
                   << "number of neurons used: " << bestGenome->usedNeurons.size() << '\n'
                   << "number of synapses used: " << bestGenome->genes.size() << '\n'
-                  << "number of correct answers: " << bestGenome->numberOfCorrectAnswers << '\n'
+                  << "number of correct answers: " << bestGenome->foodsEaten << '\n'
                   << "total number of neurons in species: " << m_neuronPool.size() << '\n';
 
         // std::cout << "\ngenes: \n";
@@ -112,13 +121,7 @@ public:
         // }
 
         // ------------------------------------------------
-        if (_window.hasFocus())
-        {
-            _window.clear();
-            Network bestBrain(m_neuronPool, bestGenome);
-            bestBrain.g_draw(_window);
-            _window.display();
-        }
+
         // ------------------------------------------------
     }
 

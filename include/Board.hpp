@@ -1,6 +1,5 @@
 #pragma once
-#include <bits/stdc++.h>
-#include "../libraries/randomNumberGenerator.hpp"
+#include "Synapse.hpp"
 
 #include "E:/programming_tools/SFML-2.5.1/include/SFML/Graphics.hpp"
 
@@ -12,9 +11,9 @@ class Board
     // m_emptyCellCount SPACE: 0
     enum CellType : int
     {
-        FOOD = -1,
-        EMPTY = 0,
-        TAIL = 1
+        food = -1,
+        empty = 0,
+        tail = 1
     };
     enum MoveCode : unsigned
     {
@@ -58,7 +57,7 @@ class Board
         {
             for (int i = 0; i < _height; i++)
             {
-                std::vector<int> row(_width, CellType::EMPTY);
+                std::vector<int> row(_width, CellType::empty);
                 m_grid.push_back(row);
             }
         }
@@ -78,8 +77,32 @@ class Board
             {
                 for (auto &cell : row)
                 {
-                    cell = CellType::EMPTY;
+                    cell = CellType::empty;
                 }
+            }
+        }
+
+        // debug
+        void print(void) const
+        {
+            for (const auto &row : m_grid)
+            {
+                for (const auto &cell : row)
+                {
+                    if (cell == CellType::food)
+                    {
+                        std::cout << "O";
+                    }
+                    if (cell > 0)
+                    {
+                        std::cout << "#";
+                    }
+                    if (cell == CellType::empty)
+                    {
+                        std::cout << " ";
+                    }
+                }
+                std::cout << std::endl;
             }
         }
     };
@@ -88,7 +111,7 @@ class Board
 
     unsigned m_emptyCellCount;
 
-    using MovementDirection = Vector2;
+    using MovementDirection = Vector2; // up , right, down, left
     const std::array<MovementDirection, 4> m_possibleMovementDirections = {Vector2(0, -1), Vector2(1, 0), Vector2(0, 1), Vector2(-1, 0)};
 
     const std::array<Vector2, 8> m_visionDirections = {Vector2(0, -1), Vector2(1, -1), Vector2(1, 0), Vector2(1, 1), Vector2(0, 1), Vector2(-1, 1), Vector2(-1, 0), Vector2(-1, -1)};
@@ -110,7 +133,7 @@ private:
             return CellStatus::WALL;
         else if (m_board.at(_coordinates) > 0)
             return CellStatus::BODY;
-        else if (m_board.at(_coordinates) == CellType::FOOD)
+        else if (m_board.at(_coordinates) == CellType::food)
             return CellStatus::FOOD;
         else
             return CellStatus::EMPTY;
@@ -135,7 +158,9 @@ private:
             counter++;
         }
         m_foodPos = wrap_index(counter);
-        m_board.at(m_foodPos) = CellType::FOOD;
+        m_board.at(m_foodPos) = CellType::food;
+
+        m_emptyCellCount--;
         // cout << "Food position: (" << m_foodPos.x << ", " << m_foodPos.y << ")" << endl;
     }
     void generate_initials(void)
@@ -178,7 +203,10 @@ public:
         reset_stats();
     }
 
-    bool play_one_move(const MoveCode &_move)
+    // return value = -500 if hit wall or body
+    //              = 1 if hit nohing
+    //              = 20 if ate food
+    int play_one_move(const unsigned _move)
     {
         const auto headPosNext = m_headPos + m_possibleMovementDirections[_move];
         const auto nextCellStatus = check_cell_status(headPosNext);
@@ -186,15 +214,18 @@ public:
         if (nextCellStatus == CellStatus::WALL or nextCellStatus == CellStatus::BODY) // we will hit a wall or body
         {
             status = false;
-            return false;
+            return -500;
         }
         else if (nextCellStatus == CellStatus::FOOD)
         {
             snakeLength++;
-            m_emptyCellCount--;
 
+            m_board.at(headPosNext) = snakeLength;
+            m_headPos = headPosNext;
             if (m_emptyCellCount not_eq 0)
                 generate_food();
+
+            return 20;
         }
         else
         {
@@ -202,7 +233,7 @@ public:
             while (true)
             {
                 // if we are done until tail then break out of the loop
-                if (--m_board.at(currentBodyPartCoords) == CellType::EMPTY)
+                if (--m_board.at(currentBodyPartCoords) == CellType::empty)
                     break;
 
                 // otherwise we need to check every direction for NEXT bodypart and point currentBodyPartCoords there if we find one
@@ -211,22 +242,25 @@ public:
                 for (const auto &direction : m_possibleMovementDirections)
                 {
                     const auto checkingCoords = currentBodyPartCoords + direction;
-                    const auto status = check_cell_status(checkingCoords);
+                    const auto checkingCellStatus = check_cell_status(checkingCoords);
+
+                    // if cell in that direction is a wall no need to further investigate
+                    if (checkingCellStatus == CellStatus::WALL)
+                        continue;
                     const auto checkingCoordsValue = m_board.at(checkingCoords);
 
-                    if (status == CellStatus::BODY and checkingCoordsValue == thisCellValue - 1)
+                    if (checkingCellStatus == CellStatus::BODY and checkingCoordsValue == thisCellValue)
                     {
                         currentBodyPartCoords = checkingCoords;
                         break;
                     }
                 }
             }
+            m_board.at(headPosNext) = snakeLength;
+            m_headPos = headPosNext;
+
+            return 1;
         }
-
-        m_board.at(headPosNext) = snakeLength;
-        m_headPos = headPosNext;
-
-        return true;
     }
     std::array<float, 24> get_input_for_NN(void) const
     {
@@ -261,7 +295,40 @@ public:
     }
 
 public: // GRAPHICS
-    void g_draw(void)
+    void print(void) const
     {
+        system("clear");
+
+        m_board.print();
+    }
+    void g_draw(sf::RenderWindow &_window)
+    {
+        const float shapeWidth = WINDOW_DIMENSION / m_width;
+        const float shapeHeight = WINDOW_DIMENSION / m_width;
+        sf::RectangleShape rect({shapeWidth, shapeHeight});
+
+        for (unsigned rowIndex = 0; rowIndex < m_height; ++rowIndex)
+        {
+            for (unsigned columnIndex = 0; columnIndex < m_height; ++columnIndex)
+            {
+                const float xPos = WINDOW_DIMENSION + columnIndex * shapeWidth;
+                const float yPos = rowIndex * shapeHeight;
+
+                rect.setPosition(sf::Vector2f(xPos, yPos));
+
+                const auto coords = Coordinates(columnIndex, rowIndex);
+                const auto cellvalue = m_board.at(coords);
+                if (cellvalue == CellType::empty)
+                    rect.setFillColor(sf::Color(144, 238, 144));
+                else if (cellvalue == CellType::food)
+                    rect.setFillColor(sf::Color(255, 0, 0));
+                else if (cellvalue > 0)
+                    rect.setFillColor(sf::Color(253, 253, 150));
+                if (cellvalue == snakeLength)
+                    rect.setFillColor(sf::Color(0xffaa1dff));
+
+                _window.draw(rect);
+            }
+        }
     }
 };

@@ -1,10 +1,14 @@
+#pragma once
 #include <bits/stdc++.h>
 #include "../libraries/randomNumberGenerator.hpp"
 
-#define NUMBER_OF_INPUTS 3
-#define NUMBER_OF_OUTPUTS 2
-#define NUMBER_OF_LINES  200
+#define NUMBER_OF_INPUTS 24
+#define NUMBER_OF_OUTPUTS 4
+// #define NUMBER_OF_LINES  200
 #define WINDOW_DIMENSION 900.f
+
+#define BOARD_WIDTH  40
+#define BOARD_HEIGHT  40
 
 class Neuron;
 using NeuronID = unsigned;

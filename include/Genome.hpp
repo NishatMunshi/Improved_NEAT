@@ -10,7 +10,7 @@ public:
 
     unsigned numberOfLayersUsed;
 
-    unsigned numberOfCorrectAnswers;
+    unsigned foodsEaten;
     float score;
 
 private:
