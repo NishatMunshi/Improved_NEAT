@@ -113,12 +113,12 @@ public:
     {
         // early snakes have to learn to eat food and avoid running around
         const double foodEatingReward = 100.0;
-        const double moveUsingPunishment = 5.0;
+        const double moveUsingPunishment = 20.0;
         double fitness = 0;
         if (_gameResult == 1)
         {
             // we ate food in this pass// reward heavily
-            fitness = 10.0 * foodEatingReward - 0.5 * moveUsingPunishment; // * (1 + 1 / (_generation + 1));
+            fitness = 10.0 * foodEatingReward - 0.5 * moveUsingPunishment * (1 + 1 / (_generation + 1));
             // if we ate food while we have a lot of moves left then it is good
             fitness = fitness * sqrt(_movesLeft + 1);
         }
@@ -133,7 +133,7 @@ public:
         {
             // we lost the game
             // punish those who used all their moves
-            fitness = 20.0 * _movesLeft; // * 1 / (_generation + 1 ) ;
+            fitness = 50.0 * _movesLeft; // * 1 / (_generation + 1 ) ;
             // but doesnt matter in the upcoming generations
         }
 
