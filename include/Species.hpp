@@ -48,7 +48,7 @@ public:
 public:
     void play_one_generation(sf::RenderWindow &_window, const unsigned _generation)
     {
-        m_board = Board(5 + log10(1 + _generation), 5 + log10(1 + _generation)); // adaptive board size
+        m_board = Board(5 + log2(1 + _generation), 5 + log2(1 + _generation)); // adaptive board size
 
         unsigned individualIndex = 0;
         double bestScore = 0;
