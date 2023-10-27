@@ -7,7 +7,7 @@ int main()
     sf::RenderWindow window(sf::VideoMode(2 * WINDOW_DIMENSION, WINDOW_DIMENSION), "NEAT");
     window.setFramerateLimit(60);
 
-    const unsigned population = 100;
+    const unsigned population = 1000;
 
     Species mySpecies(NUMBER_OF_INPUTS, NUMBER_OF_OUTPUTS, population);
 

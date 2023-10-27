@@ -42,7 +42,7 @@ class Board
     };
     using Coordinates = Vector2;
 
-    const unsigned m_width, m_height;
+    unsigned m_width, m_height;
 
     Coordinates m_headPos;
     Coordinates m_foodPos;
@@ -112,9 +112,9 @@ class Board
     unsigned m_emptyCellCount;
 
     using MovementDirection = Vector2; // up , right, down, left
-    const std::array<MovementDirection, 4> m_possibleMovementDirections = {Vector2(0, -1), Vector2(1, 0), Vector2(0, 1), Vector2(-1, 0)};
+    std::array<MovementDirection, 4> m_possibleMovementDirections = {Vector2(0, -1), Vector2(1, 0), Vector2(0, 1), Vector2(-1, 0)};
 
-    const std::array<Vector2, 8> m_visionDirections = {Vector2(0, -1), Vector2(1, -1), Vector2(1, 0), Vector2(1, 1), Vector2(0, 1), Vector2(-1, 1), Vector2(-1, 0), Vector2(-1, -1)};
+    std::array<Vector2, 8> m_visionDirections = {Vector2(0, -1), Vector2(1, -1), Vector2(1, 0), Vector2(1, 1), Vector2(0, 1), Vector2(-1, 1), Vector2(-1, 0), Vector2(-1, -1)};
 
 private:
     inline Coordinates wrap_index(const int _flattenedIndex) const
@@ -203,9 +203,9 @@ public:
         reset_stats();
     }
 
-    // return value = -500 if hit wall or body
-    //              = 1 if hit nohing
-    //              = 20 if ate food
+    // return value = -1 if hit wall or body
+    //              = 0 if hit nohing
+    //              = 1 if ate food
     int play_one_move(const unsigned _move)
     {
         const auto headPosNext = m_headPos + m_possibleMovementDirections[_move];

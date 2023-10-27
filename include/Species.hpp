@@ -48,6 +48,8 @@ public:
 public:
     void play_one_generation(sf::RenderWindow &_window, const unsigned _generation)
     {
+        m_board = Board(5 + sqrt(_generation), 5 + sqrt(_generation)); // adaptive board size
+
         unsigned individualIndex = 0;
         for (const auto &genome : m_genePool)
         {
@@ -63,7 +65,8 @@ public:
             }
             Network individualBrain(m_neuronPool, genome);
 
-            for (unsigned movesLeft = 100; movesLeft > 0 and m_board.status; --movesLeft)
+            const unsigned numberOfTotalAllowedMoves = log2f(1 + _generation) * 20;
+            for (unsigned movesLeft = numberOfTotalAllowedMoves; movesLeft > 0 and m_board.status; --movesLeft)
             {
                 const auto inputs = m_board.get_input_for_NN();
 
@@ -78,8 +81,10 @@ public:
                 while (_window.pollEvent(_event))
                 {
                     if (_event.type == sf::Event::Closed)
+                    {
                         _window.close();
-                    abort();
+                        abort();
+                    }
                 }
 
                 _window.clear();
@@ -89,17 +94,42 @@ public:
                 // -------------------------------------
 
                 const auto gameResult = m_board.play_one_move(resultIndex);
-
-                if (gameResult == 20)
-                {
-                    genome->foodsEaten++;
-                }
-                genome->score += gameResult -10; // -10 is the punishment for wasting a move
+                genome->score += fitness_function(movesLeft, gameResult, _generation); // -10 is the punishment for wasting a move
             }
             individualIndex++;
         }
     }
+    float fitness_function(const unsigned _movesLeft, const int _gameResult, const unsigned _generation)
+    {
+        // early snakes have to learn to eat food and avoid running around
+        const float foodEatingReward = 1000.f;
+        const float moveUsingPunishment = 50.f;
+        float fitness;
+        if (_gameResult == 1)
+        {
+            // we ate food in this pass// reward heavily
+            fitness = (1 + 100.f * exp(-_generation)) * (foodEatingReward - moveUsingPunishment);
+            // if we ate food while we have a lot of moves left then it is good
+            fitness = fitness * sqrt(_movesLeft);
+        }
+        else if (_gameResult == 0)
+        {
+            // we did not eat a food but we used a move
+            fitness = 100.f * exp(-_generation) * (-moveUsingPunishment);
+            // we need to punish higher generation for using a wasted move
+            fitness *= sqrt(_generation);
+        }
+        else
+        {
+            // we lost the game
+            // more moves left  = very better individual in the starting generations 
+            fitness = 1000.f *exp( - _movesLeft +1 );
+            // but doesnt matter in the upcoming generations
+            
+        }
 
+        return fitness;
+    }
     void print_best_scorer(void) const
     {
         auto less = [](const Genome *A, const Genome *B)
