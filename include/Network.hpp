@@ -5,7 +5,7 @@ class Network
 {
 private:
     using Layer = std::unordered_map<NeuronID, Neuron *>;
-    std::vector<Layer> m_neuralNetWork;
+    std::vector<Layer> m_neuralNetwork;
 
 public:
     // runs for every individual once
@@ -14,17 +14,17 @@ public:
     {
         for (unsigned layerIndex = 0; layerIndex < _genome->numberOfLayersUsed; ++layerIndex)
         {
-            m_neuralNetWork.push_back(Layer());
+            m_neuralNetwork.push_back(Layer());
         }
         // push neurons in Layers
         for (const auto [id, layerIndex] : _genome->usedNeurons)
         {
             _neuronPool.at(id)->g_layerIndex = layerIndex;
-            _neuronPool.at(id)->indexInLayer = m_neuralNetWork.at(layerIndex).size();
+            _neuronPool.at(id)->indexInLayer = m_neuralNetwork.at(layerIndex).size();
 
             // std::cout << "here";
 
-            m_neuralNetWork.at(layerIndex).insert_or_assign(id, _neuronPool.at(id));
+            m_neuralNetwork.at(layerIndex).insert_or_assign(id, _neuronPool.at(id));
         }
         // add synapses to them
         for (const auto &[id, synapse] : _genome->genes)
@@ -36,13 +36,13 @@ public:
 public:
     auto feed_forward(const std::array<float, NUMBER_OF_INPUTS> &_inputs)
     {
-        assert(m_neuralNetWork.front().size() == _inputs.size());
+        assert(m_neuralNetwork.front().size() == _inputs.size());
 
-        for (const auto &[id, neuron] : m_neuralNetWork.front())
+        for (const auto &[id, neuron] : m_neuralNetwork.front())
         {
             neuron->set_input(_inputs.at(neuron->indexInLayer));
         }
-        for (const auto &layer : m_neuralNetWork)
+        for (const auto &layer : m_neuralNetwork)
         {
             for (const auto &[id, neuron] : layer)
             {
@@ -51,24 +51,24 @@ public:
         }
 
         using NeuronGene = std::pair<NeuronID, Neuron *>;
-        auto iterator = std::max_element(m_neuralNetWork.back().begin(), m_neuralNetWork.back().end(), [](const NeuronGene &_a, const NeuronGene &_b)
+        auto iterator = std::max_element(m_neuralNetwork.back().begin(), m_neuralNetwork.back().end(), [](const NeuronGene &_a, const NeuronGene &_b)
                                          { return _a.second->get_output() < _b.second->get_output(); });
         return iterator->second->indexInLayer;
     }
 
     auto calculate_error(const std::array<float, NUMBER_OF_OUTPUTS> &_label)
     {
-        assert(m_neuralNetWork.back().size() == _label.size());
+        assert(m_neuralNetwork.back().size() == _label.size());
 
         float error = 0;
 
-        for (const auto &[id, neuron] : m_neuralNetWork.back())
+        for (const auto &[id, neuron] : m_neuralNetwork.back())
         {
             auto del = neuron->get_output() - _label.at(neuron->indexInLayer);
             del *= del;
             error += del;
         }
-        return error / m_neuralNetWork.back().size();
+        return error / m_neuralNetwork.back().size();
     }
 
     // GRAPHICS
@@ -76,14 +76,14 @@ public:
     void g_draw(sf::RenderWindow &_window) const
     {
         std::vector<float> horizontalDivisionWidths;
-        const float verticalDivisionWidth = WINDOW_DIMENSION / (m_neuralNetWork.size() + 1);
+        const float verticalDivisionWidth = WINDOW_DIMENSION / (m_neuralNetwork.size() + 1);
 
-        for (unsigned layerIndex = 0; layerIndex < m_neuralNetWork.size(); ++layerIndex)
+        for (unsigned layerIndex = 0; layerIndex < m_neuralNetwork.size(); ++layerIndex)
         {
-            horizontalDivisionWidths.push_back(WINDOW_DIMENSION / (m_neuralNetWork.at(layerIndex).size() + 1));
+            horizontalDivisionWidths.push_back(WINDOW_DIMENSION / (m_neuralNetwork.at(layerIndex).size() + 1));
         }
 
-        for (const auto &layer : m_neuralNetWork)
+        for (const auto &layer : m_neuralNetwork)
         {
             for (const auto &[id, neuron] : layer)
             {

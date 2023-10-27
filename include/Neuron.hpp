@@ -1,7 +1,7 @@
 #pragma once
 #include "Synapse.hpp"
 
-#include "SFML/Graphics.hpp"
+#include "E:/programming_tools/SFML-2.5.1/include/SFML/Graphics.hpp"
 
 using LayerIndex = unsigned;
 class Neuron
