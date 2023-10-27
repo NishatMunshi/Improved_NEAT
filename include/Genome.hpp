@@ -11,7 +11,7 @@ public:
     unsigned numberOfLayersUsed;
 
     unsigned foodsEaten;
-    float score;
+    double score;
 
 private:
     // static std::set<NeuronID> m_inputNeuronIDs;  // need to keep track to not mess up the input layer

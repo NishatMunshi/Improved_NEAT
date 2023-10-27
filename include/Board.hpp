@@ -267,7 +267,7 @@ public:
         // materials order:- WALL, BODY, FOOD
         // this order is the same as CellStatus values
         // which is helpful later when indexing into array
-        std::array<float, 24> returnArray = {3.4e38f}; // init it with max value of float
+        std::array<float, 24> returnArray = {INFINITY}; // init it with max value of float
 
         unsigned arrayIndex = 0;
         for (const auto &direction : m_visionDirections)
@@ -315,6 +315,7 @@ public: // GRAPHICS
                 const float yPos = rowIndex * shapeHeight;
 
                 rect.setPosition(sf::Vector2f(xPos, yPos));
+                rect.setOutlineThickness(50 /m_width );
 
                 const auto coords = Coordinates(columnIndex, rowIndex);
                 const auto cellvalue = m_board.at(coords);
