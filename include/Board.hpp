@@ -214,7 +214,7 @@ public:
         if (nextCellStatus == CellStatus::WALL or nextCellStatus == CellStatus::BODY) // we will hit a wall or body
         {
             status = false;
-            return -500;
+            return -1;
         }
         else if (nextCellStatus == CellStatus::FOOD)
         {
@@ -225,7 +225,7 @@ public:
             if (m_emptyCellCount not_eq 0)
                 generate_food();
 
-            return 20;
+            return 1;
         }
         else
         {
@@ -259,7 +259,7 @@ public:
             m_board.at(headPosNext) = snakeLength;
             m_headPos = headPosNext;
 
-            return 1;
+            return 0;
         }
     }
     std::array<float, 24> get_input_for_NN(void) const
