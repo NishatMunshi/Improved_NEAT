@@ -7,8 +7,8 @@
 // #define NUMBER_OF_LINES  200
 #define WINDOW_DIMENSION 900.f
 
-#define BOARD_WIDTH  40
-#define BOARD_HEIGHT  40
+#define BOARD_WIDTH  10
+#define BOARD_HEIGHT  10
 
 class Neuron;
 using NeuronID = unsigned;

@@ -267,7 +267,11 @@ public:
         // materials order:- WALL, BODY, FOOD
         // this order is the same as CellStatus values
         // which is helpful later when indexing into array
-        std::array<float, 24> returnArray = {INFINITY}; // init it with max value of float
+        std::array<float, 24> returnArray;
+        for(auto &returnValue :returnArray)
+        {
+            returnValue = INFINITY; // init it with max value of float
+        }
 
         unsigned arrayIndex = 0;
         for (const auto &direction : m_visionDirections)

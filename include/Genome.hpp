@@ -10,7 +10,6 @@ public:
 
     unsigned numberOfLayersUsed;
 
-    unsigned foodsEaten;
     double score;
 
 private:
@@ -128,6 +127,7 @@ public: // mutations
         const auto &randomShift = random_U32.generate(0, genes.size() - 1);
         const auto &randomSynapseIterator = std::next(genes.begin(), randomShift);
 
+        const float oldWeight =  randomSynapseIterator->second.second ;
         // DISABLE IT (make weight 0)
         randomSynapseIterator->second.second = 0.f;
 
@@ -140,11 +140,11 @@ public: // mutations
 
         // make two new syanpseids and corresponding synapses with this info
         const auto newSynapseId1 = std::make_pair(startingNeuronID, whatNewNeuronsIDWouldBe);
-        const auto newSynapse1 = Synapse(_newPtr, random_float());
+        const auto newSynapse1 = Synapse(_newPtr, oldWeight);
         const auto newGene1 = std::make_pair(newSynapseId1, newSynapse1);
 
         const auto newSynapseId2 = std::make_pair(whatNewNeuronsIDWouldBe, endingNeuronID);
-        const auto newSynapse2 = Synapse(endingNeuronPtr, random_float());
+        const auto newSynapse2 = Synapse(endingNeuronPtr, 1.f);
         const auto newGene2 = std::make_pair(newSynapseId2, newSynapse2);
 
         const int startingLayerIndex = usedNeurons.at(startingNeuronID);

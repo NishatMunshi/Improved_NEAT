@@ -2,7 +2,7 @@
 #include "Network.hpp"
 #include "Board.hpp"
 
-#define MUTATION_PROBABILITY 0.1f
+#define MUTATION_PROBABILITY 0.05f
 
 class Species
 {
@@ -48,95 +48,125 @@ public:
 public:
     void play_one_generation(sf::RenderWindow &_window, const unsigned _generation)
     {
-        m_board = Board(5 + log2(1 + _generation), 5 + log2(1 + _generation)); // adaptive board size
+        const unsigned numberOfTotalAllowedMoves = 5 * BOARD_WIDTH + sqrt(_generation);
+        const unsigned numberOfGamesPerIndividual = 50;
 
+        double avgScore = 0;
         unsigned individualIndex = 0;
-        double bestScore = 0;
-        unsigned bestLength= 1;
         for (const auto &genome : m_genePool)
         {
-            genome->foodsEaten = 0;
-            genome->score = 1000.0;
+            double avgLength = 0;
 
-            m_board.reset_stats();
+            genome->score = 0.0;
 
             // clear every neuron's output synapses container
             for (const auto &[id, neuron] : m_neuronPool)
             {
                 neuron->clear_output_synapses();
             }
+
+            // make its brain
             Network individualBrain(m_neuronPool, genome);
 
-            const unsigned numberOfTotalAllowedMoves = 50 + log2(1 + _generation) * 20;
-            for (unsigned movesLeft = numberOfTotalAllowedMoves; movesLeft > 0 and m_board.status; --movesLeft)
+            for (unsigned gameIndex = 0; gameIndex < numberOfGamesPerIndividual; ++gameIndex)
             {
-                const auto inputs = m_board.get_input_for_NN();
+                m_board.reset_stats();
 
-                const auto resultIndex = individualBrain.feed_forward(inputs);
-
-                // -------------------------------------
-                if (genome->score > bestScore)
-                    bestScore = genome->score;
-                if(m_board.snakeLength > bestLength )
-                bestLength = m_board.snakeLength;
-                std::stringstream ss;
-                ss << "Generation: " << _generation << " Individual: " << individualIndex << " Score = " << bestScore << " Length = " << bestLength;
-                _window.setTitle(ss.str());
-
-                sf::Event _event;
-                while (_window.pollEvent(_event))
+                for (unsigned movesLeft = numberOfTotalAllowedMoves; movesLeft > 0 and m_board.status; --movesLeft)
                 {
-                    if (_event.type == sf::Event::Closed)
+                    const auto inputs = m_board.get_input_for_NN();
+                    const auto resultIndex = individualBrain.feed_forward(inputs);
+
+                    // -------------------------------------
+                    std::stringstream ss;
+                    ss << "Generation: " << _generation << ", Individual: " << individualIndex << ", Game: " << gameIndex << "\tAvg Score = " << avgScore << ", Avg Length = " << avgLength;
+                    _window.setTitle(ss.str());
+
+                    sf::Event _event;
+                    while (_window.pollEvent(_event))
                     {
-                        _window.close();
-                        abort();
+                        if (_event.type == sf::Event::Closed)
+                        {
+                            _window.close();
+                            abort();
+                        }
                     }
+                    if (sf::Keyboard::isKeyPressed(sf::Keyboard::PageUp))
+                        _window.setFramerateLimit(UINT32_MAX);
+                    if (sf::Keyboard::isKeyPressed(sf::Keyboard::PageDown))
+                        _window.setFramerateLimit(5);
+
+                    _window.clear();
+                    individualBrain.g_draw(_window);
+                    m_board.g_draw(_window);
+                    _window.display();
+                    // -------------------------------------
+
+                    const auto gameResult = m_board.play_one_move(resultIndex);
+                    genome->score += fitness_function(movesLeft, gameResult, numberOfTotalAllowedMoves);
                 }
-                if (sf::Keyboard::isKeyPressed(sf::Keyboard::PageUp))
-                    _window.setFramerateLimit(120);
-                if (sf::Keyboard::isKeyPressed(sf::Keyboard::PageDown))
-                    _window.setFramerateLimit(5);
-
-                _window.clear();
-                individualBrain.g_draw(_window);
-                m_board.g_draw(_window);
-                _window.display();
-                // -------------------------------------
-
-                const auto gameResult = m_board.play_one_move(resultIndex);
-                genome->score += fitness_function(movesLeft, gameResult, _generation); // -10 is the punishment for wasting a move
+                avgLength += double(m_board.snakeLength) / double(numberOfGamesPerIndividual);
             }
+            avgScore += genome->score / double(m_population);
+
             individualIndex++;
         }
     }
-    static double fitness_function(const unsigned _movesLeft, const int _gameResult, const unsigned _generation)
+    static double fitness_function(const unsigned _movesLeft, const int _gameResult, const unsigned _numberOfAllowedMoves)
     {
-        // early snakes have to learn to eat food and avoid running around
-        const double foodEatingReward = 100.0;
-        const double moveUsingPunishment = 20.0;
-        double fitness = 0;
-        if (_gameResult == 1)
-        {
-            // we ate food in this pass// reward heavily
-            fitness = 10.0 * foodEatingReward - 0.5 * moveUsingPunishment * (1 + 1 / (_generation + 1));
-            // if we ate food while we have a lot of moves left then it is good
-            fitness = fitness * sqrt(_movesLeft + 1);
-        }
-        else if (_gameResult == 0)
-        {
-            // we did not eat a food but we used a move
-            fitness = -20.0 * moveUsingPunishment; // * 1 / (_generation + 1) ;
-            // we need to punish higher generation for using a wasted move
-            // fitness *= sqrt(_generation + 1);
-        }
-        else
-        {
-            // we lost the game
-            // punish those who used all their moves
-            fitness = 50.0 * _movesLeft; // * 1 / (_generation + 1 ) ;
-            // but doesnt matter in the upcoming generations
-        }
+        const double foodEatingReward = 20.0;
+        const double moveUsingPunishment = 10.0;
+        const double collisionPunishment = 15.0;
+        const double highScoreReward = 500.0;
+        const double runAroundPenalty = 100.0;
 
+        static unsigned numberOfFoodEaten = 0;
+        static int stepsBetweenFood = _numberOfAllowedMoves + 1;
+
+        double fitness = 0;
+
+        const bool foodEaten = _gameResult == 1;
+        const bool gameEndedWithOutCollision = _gameResult == 0 and _movesLeft == 1;
+        const bool gameEndedWithCollision = _gameResult == -1;
+        const bool nothinghappened = _gameResult == 0 and _movesLeft > 1;
+        const bool gameEnded = gameEndedWithCollision or gameEndedWithOutCollision;
+        if (foodEaten)
+        {
+            // give reward
+            fitness += foodEatingReward;
+
+            // update number of foods
+            numberOfFoodEaten++;
+        }
+        if (nothinghappened)
+        {
+            // calculate steps
+            stepsBetweenFood = std::abs(stepsBetweenFood) - _movesLeft;
+
+            // running around penalty
+            if (stepsBetweenFood = _numberOfAllowedMoves / 2)
+            {
+                fitness -= runAroundPenalty;
+            }
+        }
+        if (gameEndedWithCollision)
+        {
+            // collision punishment
+            // punish for one death
+            fitness -= collisionPunishment;
+        }
+        if (gameEnded)
+        {
+            // reward for number of foods eaten
+            fitness -= numberOfFoodEaten * highScoreReward;
+            // punish for avg moves used between foods
+            fitness -= (stepsBetweenFood / _numberOfAllowedMoves) * moveUsingPunishment;
+
+            //
+            // reinit static variables
+            stepsBetweenFood = _numberOfAllowedMoves + 1;
+            numberOfFoodEaten = 0;
+        }
         return fitness;
     }
     void print_best_scorer(void) const
@@ -150,7 +180,6 @@ public:
         std::cout << "best genome score: " << bestGenome->score << '\n'
                   << "number of neurons used: " << bestGenome->usedNeurons.size() << '\n'
                   << "number of synapses used: " << bestGenome->genes.size() << '\n'
-                  << "number of correct answers: " << bestGenome->foodsEaten << '\n'
                   << "total number of neurons in species: " << m_neuronPool.size() << '\n';
 
         // std::cout << "\ngenes: \n";
@@ -170,17 +199,17 @@ public:
         // decide which mutation to do
         const auto randomInt = random_U32.generate();
 
-        if (randomInt < UINT32_MAX * 0.9f)
+        if (randomInt < UINT32_MAX * 0.8f)
         {
             // change a random weight
             _genome->change_random_weight();
         }
-        else if (randomInt >= UINT32_MAX * 0.9f and randomInt < UINT32_MAX * 0.92f)
+        else if (randomInt >= UINT32_MAX * 0.8f and randomInt < UINT32_MAX * 0.9f)
         {
             // add a new synapse
             _genome->add_new_random_synapse(m_neuronPool);
         }
-        else if (randomInt >= UINT32_MAX * 0.92f and randomInt < UINT32_MAX)
+        else if (randomInt >= UINT32_MAX * 0.9f and randomInt < UINT32_MAX)
         {
             // evolve a synapse
             const auto whatNewNeuronsIDWouldBe = _genome->usedNeurons.size();

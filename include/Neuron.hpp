@@ -12,7 +12,7 @@ class Neuron
     std::unordered_map<Neuron *, float> m_outputSynapses;
 
 private:
-    inline static float activation_function(const float _x) { return 1 / (1 + exp(-_x)); }
+    inline static float activation_function(const float _x) { return 100.f * tanh(_x / 100.f); }
 
 public:
     const NeuronID id;
@@ -50,6 +50,7 @@ public:
 public:
     void g_draw(sf::RenderWindow &_window, const float _verticalDivisionWidth, const std::vector<float> &_horizontalDivisionWidths) const
     {
+        const uint8_t opacity = (this->m_output + 100.f) * 255 / 200.f;
         sf::Vector2f startingCoords, endingCoords;
         sf::Vector2f offset = {10.f, 10.f};
         sf::Vertex line[2];
@@ -64,10 +65,9 @@ public:
             endingCoords.y = _horizontalDivisionWidths[endingNeuronPtr->g_layerIndex] * (1 + endingNeuronPtr->indexInLayer);
 
             if (weight < 0)
-                line[1]
-                    .color = sf::Color(25, 189, 255, this->m_output * 255);
+                line[1].color = sf::Color(25, 189, 255, opacity);
             else
-                line[1].color = sf::Color(255, 71, 76, this->m_output * 255);
+                line[1].color = sf::Color(255, 71, 76, opacity);
 
             line[0].position = startingCoords + offset;
             line[1].position = endingCoords + offset;
@@ -82,7 +82,7 @@ public:
         circle.setOutlineColor(sf::Color::White);
 
         circle.setPosition(startingCoords);
-        circle.setFillColor(sf::Color(255, 255, 0, m_output * 255));
+        circle.setFillColor(sf::Color(255, 255, 0, opacity));
 
         _window.draw(circle);
     }
