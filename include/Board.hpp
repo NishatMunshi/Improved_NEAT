@@ -42,11 +42,6 @@ class Board
     };
     using Coordinates = Vector2;
 
-    unsigned m_width, m_height;
-
-    Coordinates m_headPos;
-    Coordinates m_foodPos;
-
     struct Grid
     {
     private:
@@ -67,7 +62,7 @@ class Board
         {
             return m_grid.at(_coords.y).at(_coords.x);
         }
-        inline int &at(const Coordinates &_coords) // non const variant of at used for writing
+        inline int &at(const Coordinates &_coords) // non const variant of at() used for writing
         {
             return m_grid.at(_coords.y).at(_coords.x);
         }
@@ -81,40 +76,25 @@ class Board
                 }
             }
         }
-
-        // debug
-        void print(void) const
-        {
-            for (const auto &row : m_grid)
-            {
-                for (const auto &cell : row)
-                {
-                    if (cell == CellType::food)
-                    {
-                        std::cout << "O";
-                    }
-                    if (cell > 0)
-                    {
-                        std::cout << "#";
-                    }
-                    if (cell == CellType::empty)
-                    {
-                        std::cout << " ";
-                    }
-                }
-                std::cout << std::endl;
-            }
-        }
     };
 
+   const unsigned m_width, m_height;
+
     Grid m_board;
+    Coordinates m_foodPos;
+    Coordinates m_headPos;
 
     unsigned m_emptyCellCount;
 
-    using MovementDirection = Vector2; // up , right, down, left
-    std::array<MovementDirection, 4> m_possibleMovementDirections = {Vector2(0, -1), Vector2(1, 0), Vector2(0, 1), Vector2(-1, 0)};
+    // up , right, down, left
+    const std::array<Vector2, 4> m_possibleMovementDirections = {Vector2(0, -1), Vector2(1, 0), Vector2(0, 1), Vector2(-1, 0)};
 
-    std::array<Vector2, 8> m_visionDirections = {Vector2(0, -1), Vector2(1, -1), Vector2(1, 0), Vector2(1, 1), Vector2(0, 1), Vector2(-1, 1), Vector2(-1, 0), Vector2(-1, -1)};
+    // N, NE, E, SE, S, SW, W, NW
+    const std::array<Vector2, 8> m_visionDirections = {Vector2(0, -1), Vector2(1, -1), Vector2(1, 0), Vector2(1, 1), Vector2(0, 1), Vector2(-1, 1), Vector2(-1, 0), Vector2(-1, -1)};
+
+public:
+    bool status; // gameover or not
+    int snakeLength;
 
 private:
     inline Coordinates wrap_index(const int _flattenedIndex) const
@@ -181,9 +161,6 @@ private:
     }
 
 public:
-    bool status; // gameover or not
-    int snakeLength;
-
     void reset_stats(void)
     {
         // cout << "Here in reset stats" << endl;
@@ -268,9 +245,9 @@ public:
         // this order is the same as CellStatus values
         // which is helpful later when indexing into array
         std::array<float, 24> returnArray;
-        for(auto &returnValue :returnArray)
+        for (auto &returnValue : returnArray)
         {
-            returnValue = INFINITY; // init it with max value of float
+            returnValue = -INFINITY; // init it with max value of float
         }
 
         unsigned arrayIndex = 0;
@@ -278,9 +255,10 @@ public:
         {
             float distance = 1;
 
-            Coordinates coordinates = m_headPos + direction;
+            Coordinates coordinates = m_headPos;
             while (true)
             {
+                coordinates = coordinates + direction;
                 const auto cellStatus = check_cell_status(coordinates);
 
                 if (cellStatus not_eq CellStatus::EMPTY)
@@ -290,21 +268,13 @@ public:
                     break;
                 }
 
-                distance = distance + 1;
-
-                coordinates = coordinates + direction;
+                distance = distance + sqrt(direction.x * direction.x + direction.y * direction.y);
             }
         }
         return returnArray;
     }
 
 public: // GRAPHICS
-    void print(void) const
-    {
-        system("clear");
-
-        m_board.print();
-    }
     void g_draw(sf::RenderWindow &_window)
     {
         const float shapeWidth = WINDOW_DIMENSION / m_width;
@@ -319,10 +289,11 @@ public: // GRAPHICS
                 const float yPos = rowIndex * shapeHeight;
 
                 rect.setPosition(sf::Vector2f(xPos, yPos));
-                rect.setOutlineThickness(50 /m_width );
+                rect.setOutlineThickness(50 / m_width);
 
                 const auto coords = Coordinates(columnIndex, rowIndex);
                 const auto cellvalue = m_board.at(coords);
+
                 if (cellvalue == CellType::empty)
                     rect.setFillColor(sf::Color(144, 238, 144));
                 else if (cellvalue == CellType::food)

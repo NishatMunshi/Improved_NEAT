@@ -1,4 +1,4 @@
-all: compile link run clean
+all: compile link
 
 compile:
 	g++ -c "E:\Code\NEAT\main.cpp" -I"E:\programming_tools\SFML-2.5.1\include" -I"E:\Code\NEAT" -DSFML_STATIC
@@ -11,3 +11,5 @@ run:
 
 clean:
 	rm main.o
+	rm main.exe
+	rm evolutionResults.txt
