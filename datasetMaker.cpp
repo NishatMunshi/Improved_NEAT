@@ -6,13 +6,13 @@ int main()
 
     std::ofstream file("xor.txt");
 
-    for (unsigned i = 0; i < 200; ++i)
+    for (unsigned i = 0; i < 1000; ++i)
     {
         int randomX = random_bool.generate();
         int randomY = random_bool.generate();
         int randomZ = random_bool.generate();
 
-        auto result = ((randomX and randomY) xor randomZ) ? 1 : 0;
+        auto result = ((randomX xor randomY) xor randomZ) ? 1 : 0;
         randomX = randomX ? 1 : 0;
         randomY = randomY ? 1 : 0;
         randomZ = randomZ ? 1 : 0;

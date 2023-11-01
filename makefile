@@ -1,10 +1,7 @@
-all: compile link
+all: compile_and_link run
 
-compile:
-	g++ -c "E:\Code\NEAT\main.cpp" -I"E:\programming_tools\SFML-2.5.1\include" -I"E:\Code\NEAT" -DSFML_STATIC
-
-link:
-	g++ main.o -o main -L"E:\programming_tools\SFML-2.5.1\lib" -lsfml-graphics-s -lsfml-window-s -lsfml-system-s -lopengl32 -lfreetype -lwinmm -lgdi32 -lsfml-main
+compile_and_link:
+	g++ -std=c++23 -O2 -Wall -o main "E:\Code\NEAT\main.cpp" -I"E:\programming_tools\SFML-2.5.1\include" -I"E:\Code\NEAT" -DSFML_STATIC -L"E:\programming_tools\SFML-2.5.1\lib" -lsfml-graphics-s -lsfml-window-s -lsfml-system-s -lopengl32 -lfreetype -lwinmm -lgdi32 -lsfml-main
 
 run:
 	.\main

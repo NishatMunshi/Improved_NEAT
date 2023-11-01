@@ -8,7 +8,7 @@
             "args": [
             ],
             "options": {
-                "cwd": ""
+                "cwd": "${workspaceFolder}"
             },
             "problemMatcher": [
                 "$gcc"

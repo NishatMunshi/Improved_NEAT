@@ -32,5 +32,5 @@ RandomNumberGenerator<uint32_t> random_bool(0, 1);
 
 inline auto random_float(void)
 {
-    return (float(random_32.generate()) / INT32_MIN )*10.f;
+    return (float(random_32.generate()) / INT32_MIN );
 }

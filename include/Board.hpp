@@ -1,58 +1,49 @@
 #pragma once
 #include "Synapse.hpp"
+#include "../libraries/Vector2.hpp"
 
 #include "E:/programming_tools/SFML-2.5.1/include/SFML/Graphics.hpp"
 
 class Board
 {
+public:
+    // up, right, down, left
+    using MoveCode = unsigned;
+
+private:
+    // BODY PARTS: m_headPos -> m_snakeLength, tail -> 1, always greater than 0
     // REPRESENTATIONS:
-    // BODY PARTS: m_headPos -> snakeLength, tail -> 1, always greater than 0
     // FOOD: -1
     // m_emptyCellCount SPACE: 0
     enum CellType : int
     {
         food = -1,
-        empty = 0,
+        grass = 0,
         tail = 1
     };
-    enum MoveCode : unsigned
-    {
-        UP,
-        RIGHT,
-        DOWN,
-        LEFT
-    };
-    enum CellStatus : unsigned
+
+    enum CellStatus : unsigned // has to be unsigned as it indexes return array
     {
         WALL,
         BODY,
         FOOD,
-        EMPTY
+        GRASS
     };
 
-    struct Vector2
-    {
-        int x, y; // need int , not unsigned
-        Vector2(const int _x, const int _y) : x(_x), y(_y) {}
-        Vector2(void) : x(0), y(0) {}
-        inline Vector2 operator+(const Vector2 &_other) const
-        {
-            return Vector2(this->x + _other.x, this->y + _other.y);
-        }
-    };
-    using Coordinates = Vector2;
+    using Coordinates = Vector2<int>;
 
     struct Grid
     {
     private:
         std::vector<std::vector<int>> m_grid; // indexed by coordinates (y, x)
+
     public:
         Grid(void) {}
-        Grid(const unsigned _width, const unsigned _height)
+        Grid(const int _width, const int _height)
         {
-            for (int i = 0; i < _height; i++)
+            for (int rowIndex = 0; rowIndex < _height; ++rowIndex)
             {
-                std::vector<int> row(_width, CellType::empty);
+                std::vector<int> row(_width, CellType::grass);
                 m_grid.push_back(row);
             }
         }
@@ -72,42 +63,56 @@ class Board
             {
                 for (auto &cell : row)
                 {
-                    cell = CellType::empty;
+                    cell = CellType::grass;
                 }
+            }
+        }
+        void print(void)
+        {
+            for (auto &row : m_grid)
+            {
+                for (auto &cell : row)
+                {
+                    std::cout << cell << ' ';
+                }
+                std::cout << '\n';
             }
         }
     };
 
-   const unsigned m_width, m_height;
+private:
+    const int m_width, m_height;
 
     Grid m_board;
     Coordinates m_foodPos;
     Coordinates m_headPos;
 
-    unsigned m_emptyCellCount;
-
     // up , right, down, left
-    const std::array<Vector2, 4> m_possibleMovementDirections = {Vector2(0, -1), Vector2(1, 0), Vector2(0, 1), Vector2(-1, 0)};
+    const std::array<Vector2<int>, 4> m_possibleMovementDirections = {Vector2(0, -1), Vector2(1, 0), Vector2(0, 1), Vector2(-1, 0)};
 
     // N, NE, E, SE, S, SW, W, NW
-    const std::array<Vector2, 8> m_visionDirections = {Vector2(0, -1), Vector2(1, -1), Vector2(1, 0), Vector2(1, 1), Vector2(0, 1), Vector2(-1, 1), Vector2(-1, 0), Vector2(-1, -1)};
+    const std::array<Vector2<int>, 8> m_visionDirections = {Vector2(0, -1), Vector2(1, -1), Vector2(1, 0), Vector2(1, 1), Vector2(0, 1), Vector2(-1, 1), Vector2(-1, 0), Vector2(-1, -1)};
+
+    unsigned m_emptyCellCount;
+    bool m_gameOver = false; // gameover or not
+    int m_snakeLength;
 
 public:
-    bool status; // gameover or not
-    int snakeLength;
+    inline auto game_over(void) const { return m_gameOver; }
+    inline auto snakeLength(void) const { return m_snakeLength; }
 
 private:
-    inline Coordinates wrap_index(const int _flattenedIndex) const
+    inline Coordinates wrap_index(const unsigned _flattenedIndex) const
     {
         return Coordinates(_flattenedIndex % m_width, _flattenedIndex / m_width);
     }
-    inline int flatten_index(const Coordinates &_wrappedIndex) const
+    inline unsigned flatten_index(const Coordinates &_wrappedIndex) const
     {
         return _wrappedIndex.x + _wrappedIndex.y * m_width;
     }
 
 private:
-    CellStatus check_cell_status(const Coordinates &_coordinates) const
+    inline CellStatus check_cell_status(const Coordinates &_coordinates) const
     {
         if (_coordinates.x >= m_width or _coordinates.x < 0 or _coordinates.y >= m_height or _coordinates.y < 0)
             return CellStatus::WALL;
@@ -116,7 +121,7 @@ private:
         else if (m_board.at(_coordinates) == CellType::food)
             return CellStatus::FOOD;
         else
-            return CellStatus::EMPTY;
+            return CellStatus::GRASS;
     }
     void generate_food(void)
     {
@@ -148,34 +153,29 @@ private:
         // cout << "Here in generate Initials before random" << endl;
         const auto flattenedIndex = random_32.generate(0, m_emptyCellCount - 1);
         m_headPos = wrap_index(flattenedIndex);
-        // cout << "Random Number between " << 0 << " and " << (m_emptyCellCount - 1) << ": " << _flattenedIndex << ", wrapped _coordinates: (" << m_headPos.x << ", " << m_headPos.y << ")" << endl;
-        snakeLength++;
+        m_snakeLength++;
+        m_board.at(m_headPos) = m_snakeLength;
+
         m_emptyCellCount--;
-        // cout << "Here in generate Initials after random" << endl;
-        m_board.at(m_headPos) = snakeLength;
 
-        // More work if extra parts required
-
-        // Work left above
         generate_food();
     }
 
 public:
     void reset_stats(void)
     {
-        // cout << "Here in reset stats" << endl;
         m_board.clear();
 
+        m_snakeLength = 0;
         m_emptyCellCount = m_width * m_height;
-        snakeLength = 0;
 
         generate_initials();
 
-        status = true;
+        m_gameOver = false;
     }
     Board(const int _width, const int _height) : m_width(_width), m_height(_height)
     {
-        // cout << "Here in constructor" << endl;
+        // std::cout << "Here in constructor" << std::endl;
         m_board = Grid(_width, _height);
         reset_stats();
     }
@@ -183,21 +183,23 @@ public:
     // return value = -1 if hit wall or body
     //              = 0 if hit nohing
     //              = 1 if ate food
-    int play_one_move(const unsigned _move)
+    int play_one_move(const MoveCode &_move)
     {
+        assert(_move < 4);
+
         const auto headPosNext = m_headPos + m_possibleMovementDirections[_move];
         const auto nextCellStatus = check_cell_status(headPosNext);
 
         if (nextCellStatus == CellStatus::WALL or nextCellStatus == CellStatus::BODY) // we will hit a wall or body
         {
-            status = false;
+            m_gameOver = true;
             return -1;
         }
         else if (nextCellStatus == CellStatus::FOOD)
         {
-            snakeLength++;
+            m_snakeLength++;
+            m_board.at(headPosNext) = m_snakeLength;
 
-            m_board.at(headPosNext) = snakeLength;
             m_headPos = headPosNext;
             if (m_emptyCellCount not_eq 0)
                 generate_food();
@@ -210,7 +212,7 @@ public:
             while (true)
             {
                 // if we are done until tail then break out of the loop
-                if (--m_board.at(currentBodyPartCoords) == CellType::empty)
+                if (--m_board.at(currentBodyPartCoords) == CellType::grass)
                     break;
 
                 // otherwise we need to check every direction for NEXT bodypart and point currentBodyPartCoords there if we find one
@@ -233,12 +235,14 @@ public:
                     }
                 }
             }
-            m_board.at(headPosNext) = snakeLength;
+            m_board.at(headPosNext) = m_snakeLength;
             m_headPos = headPosNext;
 
             return 0;
         }
     }
+
+    // bianry vision
     std::array<float, 24> get_input_for_NN(void) const
     {
         // materials order:- WALL, BODY, FOOD
@@ -247,13 +251,13 @@ public:
         std::array<float, 24> returnArray;
         for (auto &returnValue : returnArray)
         {
-            returnValue = -INFINITY; // init it with max value of float
+            returnValue = -INFINITY; // init it with min value of float
         }
 
         unsigned arrayIndex = 0;
         for (const auto &direction : m_visionDirections)
         {
-            float distance = 1;
+            // float distance = 1;
 
             Coordinates coordinates = m_headPos;
             while (true)
@@ -261,14 +265,21 @@ public:
                 coordinates = coordinates + direction;
                 const auto cellStatus = check_cell_status(coordinates);
 
-                if (cellStatus not_eq CellStatus::EMPTY)
+                if (cellStatus not_eq CellStatus::GRASS)
                 {
-                    returnArray[arrayIndex + cellStatus] = distance;
+                    if(cellStatus == CellStatus::WALL){
+                        returnArray[arrayIndex + 0] = INFINITY;
+                    }
+                    if(cellStatus == CellStatus::BODY){
+                        returnArray[arrayIndex + 1] =INFINITY;
+                    }
+                    if(cellStatus == CellStatus::FOOD){
+                        returnArray[arrayIndex + 2] = INFINITY;
+                    }
                     arrayIndex += 3;
                     break;
                 }
-
-                distance = distance + sqrt(direction.x * direction.x + direction.y * direction.y);
+                // distance = distance + 1; // sqrt(direction.x * direction.x + direction.y * direction.y);
             }
         }
         return returnArray;
@@ -281,11 +292,11 @@ public: // GRAPHICS
         const float shapeHeight = WINDOW_DIMENSION / m_width;
         sf::RectangleShape rect({shapeWidth, shapeHeight});
 
-        for (unsigned rowIndex = 0; rowIndex < m_height; ++rowIndex)
+        for (int rowIndex = 0; rowIndex < m_height; ++rowIndex)
         {
-            for (unsigned columnIndex = 0; columnIndex < m_height; ++columnIndex)
+            for (int columnIndex = 0; columnIndex < m_height; ++columnIndex)
             {
-                const float xPos = WINDOW_DIMENSION + columnIndex * shapeWidth;
+                const float xPos =  WINDOW_DIMENSION +  columnIndex * shapeWidth;
                 const float yPos = rowIndex * shapeHeight;
 
                 rect.setPosition(sf::Vector2f(xPos, yPos));
@@ -294,13 +305,13 @@ public: // GRAPHICS
                 const auto coords = Coordinates(columnIndex, rowIndex);
                 const auto cellvalue = m_board.at(coords);
 
-                if (cellvalue == CellType::empty)
+                if (cellvalue == CellType::grass)
                     rect.setFillColor(sf::Color(144, 238, 144));
                 else if (cellvalue == CellType::food)
                     rect.setFillColor(sf::Color(255, 0, 0));
                 else if (cellvalue > 0)
-                    rect.setFillColor(sf::Color(253, 253, 150));
-                if (cellvalue == snakeLength)
+                    rect.setFillColor(sf::Color(0xfdfd96ff));
+                if (cellvalue == m_snakeLength)
                     rect.setFillColor(sf::Color(0xffaa1dff));
 
                 _window.draw(rect);

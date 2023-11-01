@@ -17,7 +17,7 @@ public:
             m_neuralNetwork.push_back(Layer());
         }
         // push neurons in Layers
-        for (const auto [id, layerIndex] : _genome->usedNeurons)
+        for (const auto &[id, layerIndex] : _genome->usedNeurons)
         {
             _neuronPool.at(id)->g_layerIndex = layerIndex;
             _neuronPool.at(id)->indexInLayer = m_neuralNetwork.at(layerIndex).size();
@@ -69,6 +69,22 @@ public:
             error += del;
         }
         return error / m_neuralNetwork.back().size();
+    }
+
+    auto get_results(void ) const{
+        std::array<float, 2 > result;
+        for(const auto &[id, neuron] : m_neuralNetwork.back())
+        {
+            if(neuron->indexInLayer == 0)
+            {
+                result[0] = neuron->get_output();
+            }
+            if(neuron->indexInLayer ==  1)
+            {
+                result[1] = neuron->get_output();
+            }
+        }
+        return result;
     }
 
     // GRAPHICS

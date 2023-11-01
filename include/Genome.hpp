@@ -10,6 +10,8 @@ public:
 
     unsigned numberOfLayersUsed;
 
+    unsigned numberOfFoodsEaten;
+
     double score;
 
 private:
@@ -63,7 +65,7 @@ public:
             nonDominantParent = father;
         }
         child = new Genome(*dominantParent);
-        
+
         // we keep the dominant parent's layer choice and add extra neurons nondominant parent may have
         for (const auto &[id, layerIndex] : nonDominantParent->usedNeurons)
         {
@@ -127,28 +129,33 @@ public: // mutations
         const auto &randomShift = random_U32.generate(0, genes.size() - 1);
         const auto &randomSynapseIterator = std::next(genes.begin(), randomShift);
 
-        const float oldWeight =  randomSynapseIterator->second.second ;
-        // DISABLE IT (make weight 0)
-        randomSynapseIterator->second.second = 0.f;
+        const auto oldWeight = randomSynapseIterator->second.second;
+
+        // disable it
+        randomSynapseIterator->second.second =0; 
 
         // extract the information about where it comes from and whre it goes
         const auto startingNeuronID = randomSynapseIterator->first.first;
         const auto endingNeuronID = randomSynapseIterator->first.second;
 
-        const auto startingNeuronPtr = _neuronPool.at(startingNeuronID);
+        // remove it altogether
+        // genes.erase(randomSynapseIterator->first);
+
+        // const auto startingNeuronPtr = _neuronPool.at(startingNeuronID);
         const auto endingNeuronPtr = _neuronPool.at(endingNeuronID);
 
-        // make two new syanpseids and corresponding synapses with this info
+        // make two new syanpse ids and corresponding synapses with this info
         const auto newSynapseId1 = std::make_pair(startingNeuronID, whatNewNeuronsIDWouldBe);
-        const auto newSynapse1 = Synapse(_newPtr, oldWeight);
+        const auto newSynapse1 = Synapse(_newPtr, 1.f);
         const auto newGene1 = std::make_pair(newSynapseId1, newSynapse1);
 
         const auto newSynapseId2 = std::make_pair(whatNewNeuronsIDWouldBe, endingNeuronID);
-        const auto newSynapse2 = Synapse(endingNeuronPtr, 1.f);
+        const auto newSynapse2 = Synapse(endingNeuronPtr, oldWeight);
         const auto newGene2 = std::make_pair(newSynapseId2, newSynapse2);
 
-        const int startingLayerIndex = usedNeurons.at(startingNeuronID);
-        const int endingLayerIndex = usedNeurons.at(endingNeuronID);
+        const auto startingLayerIndex = usedNeurons.at(startingNeuronID);
+        const auto endingLayerIndex = usedNeurons.at(endingNeuronID);
+        
         // compute what new neuron's LayerIndex will be
         auto newLayerIndex = (startingLayerIndex + endingLayerIndex + 1) / 2;
         //  if it wants layer 0, we cant allow that
@@ -161,7 +168,7 @@ public: // mutations
         // we insert  a layer if the starting neuron and eding neuron are only one layer apart
         // OR the layer it wants is the output layer
 
-        auto needLayer = std::abs(startingLayerIndex - endingLayerIndex) == 1 or (newLayerIndex == numberOfLayersUsed - 1);
+        auto needLayer = startingLayerIndex - endingLayerIndex == 1 or endingLayerIndex - startingLayerIndex == 1 or (newLayerIndex == numberOfLayersUsed - 1);
         if (needLayer)
         {
             // we need to shift all following layer neuron's layerindex

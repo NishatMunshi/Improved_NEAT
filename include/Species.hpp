@@ -2,7 +2,7 @@
 #include "Network.hpp"
 #include "Board.hpp"
 
-#define MUTATION_PROBABILITY 0.05f
+#define MUTATION_PROBABILITY 0.2f
 
 class Species
 {
@@ -21,7 +21,7 @@ public:
     Species(const unsigned _numberOfInputs, const unsigned _numberOfOutputs, const unsigned _population) : m_numberOfInputs(_numberOfInputs), m_numberOfOutputs(_numberOfOutputs), m_population(_population)
     {
 
-        assert(_population % 8 == 0);
+        assert(_population % 4 == 0);
 
         // make the neurons we will use and save them in the neuronPool
         for (unsigned indexInLayer = 0; indexInLayer < _numberOfInputs; ++indexInLayer)
@@ -46,18 +46,16 @@ public:
     }
 
 public:
-    void play_one_generation(/*sf::RenderWindow &_window,*/ const unsigned _generation)
+    void play_one_generation(sf::RenderWindow &_window, const unsigned _generation)
     {
         const unsigned numberOfTotalAllowedMoves = 5 * BOARD_WIDTH + sqrt(_generation);
-        const unsigned numberOfGamesPerIndividual = 50;
+        const unsigned numberOfGamesPerIndividual = 25;
 
-        double avgScore = 0;
         unsigned individualIndex = 0;
         for (const auto &genome : m_genePool)
         {
-            unsigned avgLength = 0;
-
-            genome->score = 1e11;
+            genome->numberOfFoodsEaten = 0;
+            genome->score = 1000;
 
             // clear every neuron's output synapses container
             for (const auto &[id, neuron] : m_neuronPool)
@@ -72,60 +70,66 @@ public:
             {
                 m_board.reset_stats();
 
-                for (unsigned movesLeft = numberOfTotalAllowedMoves; movesLeft > 0 and m_board.status; --movesLeft)
+                for (unsigned movesLeft = numberOfTotalAllowedMoves; movesLeft > 0 and not m_board.game_over(); --movesLeft)
                 {
                     const auto inputs = m_board.get_input_for_NN();
 
-                    const auto resultIndex = individualBrain.feed_forward(inputs);
+                    const auto move = individualBrain.feed_forward(inputs);
 
+                    // -----------------------------------------------------------
+                    if (_window.hasFocus()) // otherwise perform calculations internally
+                    {
+                        std::stringstream ss;
+                        ss << "Generation: " << _generation << ' ' << "Individual: " << individualIndex;
+                        _window.setTitle(ss.str());
+
+                        sf::Event _event;
+                        while (_window.pollEvent(_event))
+                        {
+                            if (_event.type == sf::Event::Closed)
+                            {
+                                _window.close();
+                                abort();
+                            }
+                        }
+                        if (sf::Keyboard::isKeyPressed(sf::Keyboard::PageUp))
+                            _window.setFramerateLimit(UINT32_MAX);
+                        if (sf::Keyboard::isKeyPressed(sf::Keyboard::PageDown))
+                            _window.setFramerateLimit(5);
+                        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Home))
+                            while (true)
+                            {
+                                if (sf::Keyboard::isKeyPressed(sf::Keyboard::End))
+                                    break;
+                            }
+
+                        _window.clear();
+                        individualBrain.g_draw(_window);
+                        m_board.g_draw(_window);
+                        _window.display();
+                    }
                     // -------------------------------------
-                    // std::stringstream ss;
-                    // ss << "Generation: " << _generation << ", Individual: " << individualIndex << ", Game: " << gameIndex << "\tAvg Score = " << avgScore << ", Avg Length = " << avgLength + 1;
-                    // _window.setTitle(ss.str());
 
-                    // sf::Event _event;
-                    // while (_window.pollEvent(_event))
-                    // {
-                    //     if (_event.type == sf::Event::Closed)
-                    //     {
-                    //         _window.close();
-                    //         abort();
-                    //     }
-                    // }
-                    // if (sf::Keyboard::isKeyPressed(sf::Keyboard::PageUp))
-                    //     _window.setFramerateLimit(UINT32_MAX);
-                    // if (sf::Keyboard::isKeyPressed(sf::Keyboard::PageDown))
-                    //     _window.setFramerateLimit(5);
-                    // if (sf::Keyboard::isKeyPressed(sf::Keyboard::Home))
-                    //     while (true)
-                    //     {
-                    //         if (sf::Keyboard::isKeyPressed(sf::Keyboard::End))
-                    //             break;
-                    //     }
-
-                    // // _window.clear();
-                    // // individualBrain.g_draw(_window);
-                    // // m_board.g_draw(_window);
-                    // // _window.display();
-                    // // -------------------------------------
-
-                    const auto gameResult = m_board.play_one_move(resultIndex);
+                    const auto gameResult = m_board.play_one_move(move);
+                    if (gameResult == 1)
+                    {
+                        genome->numberOfFoodsEaten++;
+                    }
                     genome->score += fitness_function(movesLeft, gameResult, numberOfTotalAllowedMoves, numberOfGamesPerIndividual);
                 }
-                avgLength += m_board.snakeLength / numberOfGamesPerIndividual;
             }
-            avgScore += genome->score / double(m_population);
-
             individualIndex++;
         }
     }
+
+private:
     static double fitness_function(const unsigned _movesLeft, const int _gameResult, const unsigned _numberOfAllowedMoves, const unsigned _numberOfGamesPerIndividual)
     {
-        const double foodEatingReward = 20.0;
-        const double moveUsingPunishment = 10.0;
-        const double collisionPunishment = 100.0;
-        const double highScoreReward = 500.0 / _numberOfGamesPerIndividual;
-        const double runAroundPenalty = 1000.0;
+        const double foodEatingReward = 70.0;
+        const double moveUsingPunishment = 1.0;
+        const double collisionPunishment = 55.0;
+        const double highScoreReward = 5.0;
+        const double runAroundPenalty = 2000.0;
 
         static unsigned numberOfFoodEaten = 0;
         static int stepsBetweenFood = _numberOfAllowedMoves + 1;
@@ -145,17 +149,18 @@ public:
             // update number of foods
             numberOfFoodEaten++;
         }
-        if (nothinghappened)
-        {
-            // calculate steps
-            stepsBetweenFood = std::abs(stepsBetweenFood) - _movesLeft;
+        // if (nothinghappened)
+        // {
+        //     // calculate steps
+        //     stepsBetweenFood = std::abs(stepsBetweenFood) - _movesLeft;
 
-            // running around penalty
-            if (std::abs(stepsBetweenFood) == _numberOfAllowedMoves / 4)
-            {
-                fitness -= runAroundPenalty;
-            }
-        }
+        //     // running around penalty
+        //     if (std::abs(stepsBetweenFood) == _numberOfAllowedMoves / 4)
+        //     {
+        //         // std::cout <<"here";
+        //         fitness -= runAroundPenalty;
+        //     }
+        // }
         if (gameEndedWithCollision)
         {
             // collision punishment
@@ -167,7 +172,7 @@ public:
             // reward for number of foods eaten
             fitness -= numberOfFoodEaten * highScoreReward;
             // punish for avg moves used between foods
-            fitness -= (stepsBetweenFood / _numberOfAllowedMoves) * moveUsingPunishment;
+            // fitness -= (stepsBetweenFood / _numberOfAllowedMoves) * moveUsingPunishment;
 
             //
             // reinit static variables
@@ -193,6 +198,7 @@ public:
                    << "Best genome score: " << bestGenome->score << '\n'
                    << "Number of neurons used: " << bestGenome->usedNeurons.size() << '\n'
                    << "Number of synapses used: " << bestGenome->genes.size() << '\n'
+                   << "Number of food eaten: " << bestGenome->numberOfFoodsEaten << '\n'
                    << "Total number of neurons in species: " << m_neuronPool.size() << '\n';
 
         resultFile << "\nNeurons:\n";
@@ -211,7 +217,7 @@ public:
         resultFile.close();
     }
 
-public:
+private:
     void mutate(Genome *_genome)
     {
         // decide which mutation to do
@@ -253,6 +259,8 @@ public:
             }
         }
     }
+
+public:
     void repopulate(void)
     {
         // natural selection phase
@@ -263,12 +271,12 @@ public:
         std::sort(m_genePool.begin(), m_genePool.end(), greater);
 
         //  best quarter of them
-        for (unsigned index = m_population / 4; index < m_population; ++index)
+        for (unsigned index = m_population / 2; index < m_population; ++index)
         {
             // std::cout << "broke here"<<index;
             delete m_genePool.at(index);
         }
-        m_genePool.resize(m_population / 4);
+        m_genePool.resize(m_population / 2);
         auto &selectedGenomes = m_genePool;
 
         std::set<NeuronID> neuronsUsedByNewGeneration; // need to keep track for extinction phase
@@ -279,13 +287,13 @@ public:
                 neuronsUsedByNewGeneration.insert(id);
 
         // reproduction phase
-        for (long int index = m_population / 4 - 1; index >= 0; index -= 2)
+        for (long int index = m_population / 2 - 1; index >= 0; index -= 2)
         {
             const auto &father = selectedGenomes.at(index);
             const auto &mother = selectedGenomes.at(index - 1);
 
             // each couple must produce 6 offsprings
-            for (unsigned childIndex = 0; childIndex < 6; ++childIndex)
+            for (unsigned childIndex = 0; childIndex < 2; ++childIndex)
             {
                 auto child = father->cross(mother);
 
