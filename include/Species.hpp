@@ -2,7 +2,7 @@
 #include "Network.hpp"
 #include "Board.hpp"
 
-#define MUTATION_PROBABILITY 0.2f
+#define MUTATION_PROBABILITY 0.1f
 
 class Species
 {
@@ -48,8 +48,7 @@ public:
 public:
     void play_one_generation(sf::RenderWindow &_window, const unsigned _generation)
     {
-        const unsigned numberOfTotalAllowedMoves = 5 * BOARD_WIDTH + sqrt(_generation);
-        const unsigned numberOfGamesPerIndividual = 25;
+        const unsigned numberOfTotalAllowedMoves = 10 * BOARD_WIDTH + sqrt(_generation);
 
         unsigned individualIndex = 0;
         for (const auto &genome : m_genePool)
@@ -66,7 +65,7 @@ public:
             // make its brain
             Network individualBrain(m_neuronPool, genome);
 
-            for (unsigned gameIndex = 0; gameIndex < numberOfGamesPerIndividual; ++gameIndex)
+            for (unsigned gameIndex = 0; gameIndex < NUMBER_OF_GAMES; ++gameIndex)
             {
                 m_board.reset_stats();
 
@@ -115,7 +114,7 @@ public:
                     {
                         genome->numberOfFoodsEaten++;
                     }
-                    genome->score += fitness_function(movesLeft, gameResult, numberOfTotalAllowedMoves, numberOfGamesPerIndividual);
+                    genome->score += fitness_function(movesLeft, gameResult, numberOfTotalAllowedMoves);
                 }
             }
             individualIndex++;
@@ -123,16 +122,18 @@ public:
     }
 
 private:
-    static double fitness_function(const unsigned _movesLeft, const int _gameResult, const unsigned _numberOfAllowedMoves, const unsigned _numberOfGamesPerIndividual)
+    static double fitness_function(const unsigned _movesLeft, const int _gameResult, const unsigned _numberOfAllowedMoves)
     {
-        const double foodEatingReward = 70.0;
-        const double moveUsingPunishment = 1.0;
-        const double collisionPunishment = 55.0;
-        const double highScoreReward = 5.0;
-        const double runAroundPenalty = 2000.0;
+        const double foodEatingReward = 50.0;
+        const double collisionPunishment = 15.0;
+        const double runAroundPenalty =  10.0;
+
+        const double moveUsingPunishment = 0.1;
+        const double highScoreReward = 0.0;
 
         static unsigned numberOfFoodEaten = 0;
-        static int stepsBetweenFood = _numberOfAllowedMoves + 1;
+        static unsigned stepsToEatFood = 0;
+        static unsigned avgStepsBetweenFood = 0;
 
         double fitness = 0.0;
 
@@ -148,19 +149,26 @@ private:
 
             // update number of foods
             numberOfFoodEaten++;
-        }
-        // if (nothinghappened)
-        // {
-        //     // calculate steps
-        //     stepsBetweenFood = std::abs(stepsBetweenFood) - _movesLeft;
 
-        //     // running around penalty
-        //     if (std::abs(stepsBetweenFood) == _numberOfAllowedMoves / 4)
-        //     {
-        //         // std::cout <<"here";
-        //         fitness -= runAroundPenalty;
-        //     }
-        // }
+            // increment avg steps
+            avgStepsBetweenFood += stepsToEatFood;
+
+            // reset steps 
+            stepsToEatFood = 0;
+
+        }
+        if (nothinghappened)
+        {
+            // calculate steps
+            stepsToEatFood++;
+
+            // running around penalty
+            if (stepsToEatFood >= _numberOfAllowedMoves / 3)
+            {
+                // std::cout <<"here";
+                fitness -= runAroundPenalty;
+            }
+        }
         if (gameEndedWithCollision)
         {
             // collision punishment
@@ -170,14 +178,17 @@ private:
         if (gameEnded)
         {
             // reward for number of foods eaten
-            fitness -= numberOfFoodEaten * highScoreReward;
-            // punish for avg moves used between foods
-            // fitness -= (stepsBetweenFood / _numberOfAllowedMoves) * moveUsingPunishment;
+            fitness += numberOfFoodEaten * highScoreReward;
+
+            // // punish for avg moves used between foods
+            fitness -= (avgStepsBetweenFood)/(numberOfFoodEaten+1) * moveUsingPunishment;
 
             //
             // reinit static variables
-            stepsBetweenFood = _numberOfAllowedMoves + 1;
-            numberOfFoodEaten = 0;
+            numberOfFoodEaten = 0; 
+            stepsToEatFood = 0;
+            avgStepsBetweenFood  =0;
+
         }
         return fitness;
     }

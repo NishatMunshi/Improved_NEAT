@@ -91,7 +91,7 @@ private:
     const std::array<Vector2<int>, 4> m_possibleMovementDirections = {Vector2(0, -1), Vector2(1, 0), Vector2(0, 1), Vector2(-1, 0)};
 
     // N, NE, E, SE, S, SW, W, NW
-    const std::array<Vector2<int>, 8> m_visionDirections = {Vector2(0, -1), Vector2(1, -1), Vector2(1, 0), Vector2(1, 1), Vector2(0, 1), Vector2(-1, 1), Vector2(-1, 0), Vector2(-1, -1)};
+    const std::array<Vector2<int>, 16> m_visionDirections = {Vector2(0, -1), Vector2(1, -2), Vector2(1, -1), Vector2(2, -1), Vector2(1, 0), Vector2(2, 1), Vector2(1, 1), Vector2(1, 2), Vector2(0, 1), Vector2(-1, 2), Vector2(-1, 1), Vector2(-2, 1), Vector2(-1, 0), Vector2(-2, -1), Vector2(-1, -1), Vector2(-1, -2)};
 
     unsigned m_emptyCellCount;
     bool m_gameOver = false; // gameover or not
@@ -243,12 +243,12 @@ public:
     }
 
     // bianry vision
-    std::array<float, 24> get_input_for_NN(void) const
+    std::array<float, NUMBER_OF_INPUTS> get_input_for_NN(void) const
     {
         // materials order:- WALL, BODY, FOOD
         // this order is the same as CellStatus values
         // which is helpful later when indexing into array
-        std::array<float, 24> returnArray;
+        std::array<float, NUMBER_OF_INPUTS> returnArray;
         for (auto &returnValue : returnArray)
         {
             returnValue = -INFINITY; // init it with min value of float
@@ -257,31 +257,31 @@ public:
         unsigned arrayIndex = 0;
         for (const auto &direction : m_visionDirections)
         {
-            // float distance = 1;
+            float distance = 0.f;
 
             Coordinates coordinates = m_headPos;
             while (true)
             {
                 coordinates = coordinates + direction;
                 const auto cellStatus = check_cell_status(coordinates);
+                distance = distance + (std::abs(direction.x) + std::abs(direction.y));
 
                 if (cellStatus not_eq CellStatus::GRASS)
                 {
-                    if(cellStatus == CellStatus::WALL){
-                        returnArray[arrayIndex + 0] = INFINITY;
-                    }
-                    if(cellStatus == CellStatus::BODY){
-                        returnArray[arrayIndex + 1] =INFINITY;
-                    }
-                    if(cellStatus == CellStatus::FOOD){
-                        returnArray[arrayIndex + 2] = INFINITY;
-                    }
+                    returnArray[arrayIndex + cellStatus] = distance;
                     arrayIndex += 3;
                     break;
                 }
-                // distance = distance + 1; // sqrt(direction.x * direction.x + direction.y * direction.y);
             }
         }
+        // ---------------------------------------
+        // for (const auto &dist : returnArray)
+        // {
+        //     std::cout << dist << ' ';
+        // }
+        // std::cout << '\n';
+        // ----------------------------------------
+
         return returnArray;
     }
 
@@ -296,7 +296,7 @@ public: // GRAPHICS
         {
             for (int columnIndex = 0; columnIndex < m_height; ++columnIndex)
             {
-                const float xPos =  WINDOW_DIMENSION +  columnIndex * shapeWidth;
+                const float xPos = WINDOW_DIMENSION + columnIndex * shapeWidth;
                 const float yPos = rowIndex * shapeHeight;
 
                 rect.setPosition(sf::Vector2f(xPos, yPos));

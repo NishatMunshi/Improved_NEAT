@@ -14,7 +14,7 @@ class Neuron
 private:
     inline static float activation_function(const float _x)
     {
-        return 1.f / (1.f + exp((-_x/5)));
+        return _x < 0 ? -1 : 9 * exp(-_x / 10);
     }
 
 public:
@@ -53,7 +53,7 @@ public:
 public:
     void g_draw(sf::RenderWindow &_window, const float _verticalDivisionWidth, const std::vector<float> &_horizontalDivisionWidths) const
     {
-        const uint8_t opacity = this->m_output * 255;
+        const uint8_t opacity = (this->m_output + 1) * 255 / 10.f;
         sf::Vector2f startingCoords, endingCoords;
         sf::Vector2f offset = {10.f, 10.f};
         sf::Vertex line[2];
