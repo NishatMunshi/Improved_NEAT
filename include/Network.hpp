@@ -94,9 +94,11 @@ public:
         std::vector<float> horizontalDivisionWidths;
         const float verticalDivisionWidth = WINDOW_DIMENSION / (m_neuralNetwork.size() + 1);
 
-        for (unsigned layerIndex = 0; layerIndex < m_neuralNetwork.size(); ++layerIndex)
+
+        // CHECK IF THESE FOR LOOPS CAN BE MERGED INTO ONE
+        for (const auto &layer: m_neuralNetwork)
         {
-            horizontalDivisionWidths.push_back(WINDOW_DIMENSION / (m_neuralNetwork.at(layerIndex).size() + 1));
+            horizontalDivisionWidths.push_back(WINDOW_DIMENSION / (layer.size() + 1));
         }
 
         for (const auto &layer : m_neuralNetwork)

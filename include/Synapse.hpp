@@ -1,6 +1,6 @@
 #pragma once
 #include <bits/stdc++.h>
-#include "../libraries/randomNumberGenerator.hpp"
+#include "randomNumberGenerator.hpp"
 #include "Defines.hpp"
 
 class Neuron;

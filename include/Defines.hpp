@@ -1,3 +1,4 @@
+#pragma once
 #define WINDOW_DIMENSION 900.f
 
 #define NUMBER_OF_INPUTS 48u

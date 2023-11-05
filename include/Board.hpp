@@ -1,6 +1,7 @@
 #pragma once
-#include "Synapse.hpp"
-#include "../libraries/Vector2.hpp"
+#include "Defines.hpp"
+#include "Vector2.hpp"
+
 
 #include "E:/programming_tools/SFML-2.5.1/include/SFML/Graphics.hpp"
 
