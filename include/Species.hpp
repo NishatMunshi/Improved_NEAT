@@ -50,8 +50,7 @@ public:
     {
         const unsigned numberOfTotalAllowedMoves = 10 * BOARD_WIDTH + sqrt(_generation);
 
-        unsigned individualIndex = 0;
-        for (const auto &genome : m_genePool)
+        for (unsigned individualIndex = 0; const auto &genome : m_genePool)
         {
             genome->numberOfFoodsEaten = 0;
             genome->score = 1000;
@@ -126,7 +125,7 @@ private:
     {
         const double foodEatingReward = 50.0;
         const double collisionPunishment = 15.0;
-        const double runAroundPenalty =  10.0;
+        const double runAroundPenalty = 10.0;
 
         const double moveUsingPunishment = 0.1;
         const double highScoreReward = 0.0;
@@ -153,9 +152,8 @@ private:
             // increment avg steps
             avgStepsBetweenFood += stepsToEatFood;
 
-            // reset steps 
+            // reset steps
             stepsToEatFood = 0;
-
         }
         if (nothinghappened)
         {
@@ -181,14 +179,13 @@ private:
             fitness += numberOfFoodEaten * highScoreReward;
 
             // // punish for avg moves used between foods
-            fitness -= (avgStepsBetweenFood)/(numberOfFoodEaten+1) * moveUsingPunishment;
+            fitness -= (avgStepsBetweenFood) / (numberOfFoodEaten + 1) * moveUsingPunishment;
 
             //
             // reinit static variables
-            numberOfFoodEaten = 0; 
+            numberOfFoodEaten = 0;
             stepsToEatFood = 0;
-            avgStepsBetweenFood  =0;
-
+            avgStepsBetweenFood = 0;
         }
         return fitness;
     }
