@@ -297,13 +297,12 @@ public:
                 {
                     mutate(child);
                 }
-
-                // add child to the front of genepool
-                m_genePool.push_back(child);
-
                 // keep track of which neurons this child uses
                 for (const auto &[id, layerIndex] : child.usedNeurons)
                     neuronsUsedByNewGeneration.insert(id);
+
+                // add child to the front of genepool
+                m_genePool.push_back(std::move(child));
             }
 
             // now that father and mother are done reproducing
