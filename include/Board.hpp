@@ -2,7 +2,6 @@
 #include "Defines.hpp"
 #include "Vector2.hpp"
 
-
 #include "E:/programming_tools/SFML-2.5.1/include/SFML/Graphics.hpp"
 
 class Board
@@ -82,8 +81,6 @@ private:
     };
 
 private:
-    const int m_width, m_height;
-
     Grid m_board;
     Coordinates m_foodPos;
     Coordinates m_headPos;
@@ -105,17 +102,17 @@ public:
 private:
     inline Coordinates wrap_index(const unsigned _flattenedIndex) const
     {
-        return Coordinates(_flattenedIndex % m_width, _flattenedIndex / m_width);
+        return Coordinates(_flattenedIndex % BOARD_WIDTH, _flattenedIndex / BOARD_WIDTH);
     }
     inline unsigned flatten_index(const Coordinates &_wrappedIndex) const
     {
-        return _wrappedIndex.x + _wrappedIndex.y * m_width;
+        return _wrappedIndex.x + _wrappedIndex.y * BOARD_WIDTH;
     }
 
 private:
     inline CellStatus check_cell_status(const Coordinates &_coordinates) const
     {
-        if (_coordinates.x >= m_width or _coordinates.x < 0 or _coordinates.y >= m_height or _coordinates.y < 0)
+        if (_coordinates.x >= BOARD_WIDTH or _coordinates.x < 0 or _coordinates.y >= BOARD_HEIGHT or _coordinates.y < 0)
             return CellStatus::WALL;
         else if (m_board.at(_coordinates) > 0)
             return CellStatus::BODY;
@@ -168,16 +165,16 @@ public:
         m_board.clear();
 
         m_snakeLength = 0;
-        m_emptyCellCount = m_width * m_height;
+        m_emptyCellCount = BOARD_WIDTH * BOARD_HEIGHT;
 
         generate_initials();
 
         m_gameOver = false;
     }
-    Board(const int _width, const int _height) : m_width(_width), m_height(_height)
+    Board(void)
     {
         // std::cout << "Here in constructor" << std::endl;
-        m_board = Grid(_width, _height);
+        m_board = Grid(BOARD_WIDTH, BOARD_HEIGHT);
         reset_stats();
     }
 
@@ -289,19 +286,19 @@ public:
 public: // GRAPHICS
     void g_draw(sf::RenderWindow &_window)
     {
-        const float shapeWidth = WINDOW_DIMENSION / m_width;
-        const float shapeHeight = WINDOW_DIMENSION / m_width;
+        const float shapeWidth = WINDOW_DIMENSION / BOARD_WIDTH;
+        const float shapeHeight = WINDOW_DIMENSION / BOARD_WIDTH;
         sf::RectangleShape rect({shapeWidth, shapeHeight});
 
-        for (int rowIndex = 0; rowIndex < m_height; ++rowIndex)
+        for (int rowIndex = 0; rowIndex < BOARD_HEIGHT; ++rowIndex)
         {
-            for (int columnIndex = 0; columnIndex < m_height; ++columnIndex)
+            for (int columnIndex = 0; columnIndex < BOARD_HEIGHT; ++columnIndex)
             {
                 const float xPos = WINDOW_DIMENSION + columnIndex * shapeWidth;
                 const float yPos = rowIndex * shapeHeight;
 
                 rect.setPosition(sf::Vector2f(xPos, yPos));
-                rect.setOutlineThickness(50 / m_width);
+                rect.setOutlineThickness(50 / BOARD_WIDTH);
 
                 const auto coords = Coordinates(columnIndex, rowIndex);
                 const auto cellvalue = m_board.at(coords);

@@ -1,6 +1,7 @@
 #pragma once
 #include "Network.hpp"
 #include "Board.hpp"
+#include "Defines.hpp"
 
 #define MUTATION_PROBABILITY 0.1f
 
@@ -11,37 +12,32 @@ private:
 
     std::deque<Genome *> m_genePool;
 
-    const unsigned m_numberOfInputs;
-    const unsigned m_numberOfOutputs;
-    const unsigned m_population;
-
-    Board m_board{BOARD_WIDTH, BOARD_HEIGHT};
+    Board m_board;
 
 public:
-    Species(const unsigned _numberOfInputs, const unsigned _numberOfOutputs, const unsigned _population) : m_numberOfInputs(_numberOfInputs), m_numberOfOutputs(_numberOfOutputs), m_population(_population)
+    Species(void)
     {
-
-        assert(_population % 4 == 0);
+        assert(POPULATION % 4 == 0);
 
         // make the neurons we will use and save them in the neuronPool
-        for (unsigned indexInLayer = 0; indexInLayer < _numberOfInputs; ++indexInLayer)
+        for (unsigned indexInLayer = 0; indexInLayer < NUMBER_OF_INPUTS; ++indexInLayer)
         {
             const auto id = indexInLayer;
             const auto newNeuron = new Neuron(id, 0, indexInLayer);
             m_neuronPool.insert_or_assign(id, newNeuron);
         }
-        for (unsigned indexInLayer = 0; indexInLayer < _numberOfOutputs; ++indexInLayer)
+        for (unsigned indexInLayer = 0; indexInLayer < NUMBER_OF_OUTPUTS; ++indexInLayer)
         {
-            const auto id = _numberOfInputs + indexInLayer;
+            const auto id = NUMBER_OF_INPUTS + indexInLayer;
             const auto newNeuron = new Neuron(id, 1, indexInLayer);
             m_neuronPool.insert_or_assign(id, newNeuron);
         }
 
         // push the starting population
-        for (unsigned individualIndex = 0; individualIndex < _population; ++individualIndex)
+        for (unsigned individualIndex = 0; individualIndex < POPULATION; ++individualIndex)
         {
             // make individual genomes
-            m_genePool.push_back(new Genome(_numberOfInputs, _numberOfOutputs, m_neuronPool));
+            m_genePool.push_back(new Genome(m_neuronPool));
         }
     }
 
@@ -124,10 +120,10 @@ private:
     static double fitness_function(const unsigned _movesLeft, const int _gameResult, const unsigned _numberOfAllowedMoves)
     {
         const double foodEatingReward = 50.0;
-        const double collisionPunishment = 15.0;
-        const double runAroundPenalty = 10.0;
+        const double collisionPunishment = 0.0;
+        const double runAroundPenalty = 0.0;
 
-        const double moveUsingPunishment = 0.1;
+        const double moveUsingPunishment = 0.0;
         const double highScoreReward = 0.0;
 
         static unsigned numberOfFoodEaten = 0;
@@ -209,18 +205,18 @@ public:
                    << "Number of food eaten: " << bestGenome->numberOfFoodsEaten << '\n'
                    << "Total number of neurons in species: " << m_neuronPool.size() << '\n';
 
-        resultFile << "\nNeurons:\n";
-        for (const auto &[id, layerIndex] : bestGenome->usedNeurons)
-        {
-            resultFile << '(' << id << ',' << layerIndex << ')' << '\n';
-        }
+        // resultFile << "\nNeurons:\n";
+        // for (const auto &[id, layerIndex] : bestGenome->usedNeurons)
+        // {
+        //     resultFile << '(' << id << ',' << layerIndex << ')' << '\n';
+        // }
 
-        resultFile << "\nSynapses:\n";
-        for (const auto &[id, synapse] : bestGenome->genes)
-        {
-            resultFile << '(' << id.first << ',' << id.second << ',' << synapse.second << ")" << '\n';
-        }
-        resultFile << '\n';
+        // resultFile << "\nSynapses:\n";
+        // for (const auto &[id, synapse] : bestGenome->genes)
+        // {
+        //     resultFile << '(' << id.first << ',' << id.second << ',' << synapse.second << ")" << '\n';
+        // }
+        // resultFile << '\n';
 
         resultFile.close();
     }
@@ -279,12 +275,12 @@ public:
         std::sort(m_genePool.begin(), m_genePool.end(), greater);
 
         //  best quarter of them
-        for (unsigned index = m_population / 2; index < m_population; ++index)
+        for (unsigned index = POPULATION / 2; index < POPULATION; ++index)
         {
             // std::cout << "broke here"<<index;
             delete m_genePool.at(index);
         }
-        m_genePool.resize(m_population / 2);
+        m_genePool.resize(POPULATION / 2);
         auto &selectedGenomes = m_genePool;
 
         std::set<NeuronID> neuronsUsedByNewGeneration; // need to keep track for extinction phase
@@ -295,7 +291,7 @@ public:
                 neuronsUsedByNewGeneration.insert(id);
 
         // reproduction phase
-        for (long int index = m_population / 2 - 1; index >= 0; index -= 2)
+        for (long int index = POPULATION / 2 - 1; index >= 0; index -= 2)
         {
             const auto &father = selectedGenomes.at(index);
             const auto &mother = selectedGenomes.at(index - 1);

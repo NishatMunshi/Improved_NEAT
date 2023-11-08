@@ -20,19 +20,19 @@ private:
 
 public:
     // this constructor is called only when starting the species
-    Genome(const unsigned _numberOfInputs, const unsigned _numberOfOutputs, const std::unordered_map<NeuronID, Neuron *> &_neuronPool)
+    Genome(const std::unordered_map<NeuronID, Neuron *> &_neuronPool)
     {
         numberOfLayersUsed = 2;
         // fully connect input to output layer
-        for (unsigned inputIndex = 0; inputIndex < _numberOfInputs; ++inputIndex)
+        for (unsigned inputIndex = 0; inputIndex < NUMBER_OF_INPUTS; ++inputIndex)
         {
             const auto sensorNeuronID = inputIndex;
             usedNeurons.insert_or_assign(sensorNeuronID, 0);
             // m_inputNeuronIDs.insert(sensorNeuronID);
 
-            for (unsigned outputIndex = 0; outputIndex < _numberOfOutputs; ++outputIndex)
+            for (unsigned outputIndex = 0; outputIndex < NUMBER_OF_OUTPUTS; ++outputIndex)
             {
-                const auto motorNeuronID = _numberOfInputs + outputIndex;
+                const auto motorNeuronID = NUMBER_OF_INPUTS + outputIndex;
                 // since it is a map, duplicates are already taken care of
                 usedNeurons.insert_or_assign(motorNeuronID, 1);
                 // m_outputNeuronIDs.insert(motorNeuronID);

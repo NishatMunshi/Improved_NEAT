@@ -3,7 +3,7 @@
 int main()
 {
     sf::RenderWindow window(sf::VideoMode(2 * WINDOW_DIMENSION, WINDOW_DIMENSION), "NEAT");
-    Species mySpecies(NUMBER_OF_INPUTS, NUMBER_OF_OUTPUTS, POPULATION);
+    Species mySpecies;
 
     for (unsigned generation = 0; true; ++generation)
     {
