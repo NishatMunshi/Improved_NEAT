@@ -120,7 +120,7 @@ private:
     {
         const double foodEatingReward = 50.0;
         const double collisionPunishment = 0.0;
-        const double runAroundPenalty = 10.0;
+        const double runAroundPenalty = 0.0;
 
         const double moveUsingPunishment = 0.0;
         const double highScoreReward = 0.0;
