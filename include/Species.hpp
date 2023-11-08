@@ -119,8 +119,8 @@ private:
     static double fitness_function(const unsigned _movesLeft, const int _gameResult, const unsigned _numberOfAllowedMoves)
     {
         const double foodEatingReward = 50.0;
-        const double collisionPunishment = 20.0;
-        const double runAroundPenalty = 30.0;
+        const double collisionPunishment = 0.0;
+        const double runAroundPenalty = 10.0;
 
         const double moveUsingPunishment = 0.0;
         const double highScoreReward = 0.0;
