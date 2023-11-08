@@ -10,17 +10,18 @@ public:
 
     unsigned numberOfLayersUsed;
 
-    unsigned numberOfFoodsEaten;
+    unsigned numberOfFoodsEaten = 0;
 
-    double score;
+    double score = 0.0;
 
 private:
     // static std::set<NeuronID> m_inputNeuronIDs;  // need to keep track to not mess up the input layer
     // static std::set<NeuronID> m_outputNeuronIDs; // need to keep track to not mess up the output layer
 
 public:
+    Genome(void) {}
     // this constructor is called only when starting the species
-    Genome(const std::unordered_map<NeuronID, Neuron *> &_neuronPool)
+   explicit  Genome(const std::unordered_map<NeuronID, Neuron *> &_neuronPool) noexcept
     {
         numberOfLayersUsed = 2;
         // fully connect input to output layer
@@ -46,54 +47,51 @@ public:
     }
 
 public:
-    Genome *cross(Genome *_mother)
+    Genome cross(const Genome &_other) const
     {
-        const auto &father = this;
-        Genome *child;
-        Genome *dominantParent;
-        Genome *nonDominantParent;
-        // select the dominant parent
+        const Genome *dominantParent;
+        const Genome *nonDominantParent;
 
-        if (father->numberOfLayersUsed >= _mother->numberOfLayersUsed)
+        // select the dominant parent
+        if (this->numberOfLayersUsed >= _other.numberOfLayersUsed)
         {
-            dominantParent = father;
-            nonDominantParent = _mother;
+            dominantParent = this;
+            nonDominantParent = &_other;
         }
         else
         {
-            dominantParent = _mother;
-            nonDominantParent = father;
+            dominantParent = &_other;
+            nonDominantParent = this;
         }
-        child = new Genome(*dominantParent);
+        auto child = *dominantParent; // must be a copy operation
 
         // we keep the dominant parent's layer choice and add extra neurons nondominant parent may have
         for (const auto &[id, layerIndex] : nonDominantParent->usedNeurons)
         {
-            if (not child->usedNeurons.count(id))
+            if (not child.usedNeurons.count(id))
             {
                 // this means child does not have this neuron and must use it
-                child->usedNeurons.insert_or_assign(id, layerIndex);
+                child.usedNeurons.insert_or_assign(id, layerIndex);
             }
         }
 
         // child must use all synapseIndeces used by father and mother
         for (const auto &[id, synapse] : nonDominantParent->genes)
         {
-            const auto matched = child->genes.count(id);
-            if (matched)
+            if (child.genes.count(id))
             {
                 // decide whether to use nondominant's gene
-                auto decision = random_bool.generate();
+                const auto decision = random_bool.generate();
                 if (decision)
                 {
                     // use nondominant's gene
-                    child->genes.at(id) = synapse;
+                    child.genes.at(id) = synapse;
                 }
             }
             // if it did not match, it must be a new one and we have to insert it
             else
             {
-                child->genes.insert_or_assign(id, synapse);
+                child.genes.insert_or_assign(id, synapse);
             }
         }
         return child;
@@ -132,7 +130,7 @@ public: // mutations
         const auto oldWeight = randomSynapseIterator->second.second;
 
         // disable it
-        randomSynapseIterator->second.second =0; 
+        randomSynapseIterator->second.second = 0;
 
         // extract the information about where it comes from and whre it goes
         const auto startingNeuronID = randomSynapseIterator->first.first;
@@ -155,7 +153,7 @@ public: // mutations
 
         const auto startingLayerIndex = usedNeurons.at(startingNeuronID);
         const auto endingLayerIndex = usedNeurons.at(endingNeuronID);
-        
+
         // compute what new neuron's LayerIndex will be
         auto newLayerIndex = (startingLayerIndex + endingLayerIndex + 1) / 2;
         //  if it wants layer 0, we cant allow that

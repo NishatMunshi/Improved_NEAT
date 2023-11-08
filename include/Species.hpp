@@ -3,14 +3,12 @@
 #include "Board.hpp"
 #include "Defines.hpp"
 
-#define MUTATION_PROBABILITY 0.1f
-
 class Species
 {
 private:
     std::unordered_map<NeuronID, Neuron *> m_neuronPool;
 
-    std::deque<Genome *> m_genePool;
+    std::deque<Genome> m_genePool;
 
     Board m_board;
 
@@ -36,8 +34,9 @@ public:
         // push the starting population
         for (unsigned individualIndex = 0; individualIndex < POPULATION; ++individualIndex)
         {
+            // std::cout << "here";
             // make individual genomes
-            m_genePool.push_back(new Genome(m_neuronPool));
+            m_genePool.push_back(Genome(m_neuronPool));
         }
     }
 
@@ -46,10 +45,10 @@ public:
     {
         const unsigned numberOfTotalAllowedMoves = 10 * BOARD_WIDTH + sqrt(_generation);
 
-        for (unsigned individualIndex = 0; const auto &genome : m_genePool)
+        for (unsigned individualIndex = 0; auto &genome : m_genePool)
         {
-            genome->numberOfFoodsEaten = 0;
-            genome->score = 1000;
+            genome.numberOfFoodsEaten = 0;
+            genome.score = 1000;
 
             // clear every neuron's output synapses container
             for (const auto &[id, neuron] : m_neuronPool)
@@ -107,9 +106,9 @@ public:
                     const auto gameResult = m_board.play_one_move(move);
                     if (gameResult == 1)
                     {
-                        genome->numberOfFoodsEaten++;
+                        genome.numberOfFoodsEaten++;
                     }
-                    genome->score += fitness_function(movesLeft, gameResult, numberOfTotalAllowedMoves);
+                    genome.score += fitness_function(movesLeft, gameResult, numberOfTotalAllowedMoves);
                 }
             }
             individualIndex++;
@@ -120,8 +119,8 @@ private:
     static double fitness_function(const unsigned _movesLeft, const int _gameResult, const unsigned _numberOfAllowedMoves)
     {
         const double foodEatingReward = 50.0;
-        const double collisionPunishment = 0.0;
-        const double runAroundPenalty = 0.0;
+        const double collisionPunishment = 20.0;
+        const double runAroundPenalty = 30.0;
 
         const double moveUsingPunishment = 0.0;
         const double highScoreReward = 0.0;
@@ -189,11 +188,11 @@ private:
 public:
     void record_result(const unsigned _generation) const
     {
-        auto less = [](const Genome *A, const Genome *B)
+        auto less = [](const Genome &_A, const Genome &_B)
         {
-            return A->score < B->score;
+            return _A.score < _B.score;
         };
-        const auto &bestGenome = *std::max_element(m_genePool.begin(), m_genePool.end(), less);
+        const auto &bestGenome = std::max_element(m_genePool.begin(), m_genePool.end(), less);
 
         std::ofstream resultFile;
         resultFile.open("evolutionResults.txt");
@@ -206,13 +205,13 @@ public:
                    << "Total number of neurons in species: " << m_neuronPool.size() << '\n';
 
         // resultFile << "\nNeurons:\n";
-        // for (const auto &[id, layerIndex] : bestGenome->usedNeurons)
+        // for (const auto &[id, layerIndex] : bestGenome.usedNeurons)
         // {
         //     resultFile << '(' << id << ',' << layerIndex << ')' << '\n';
         // }
 
         // resultFile << "\nSynapses:\n";
-        // for (const auto &[id, synapse] : bestGenome->genes)
+        // for (const auto &[id, synapse] : bestGenome.genes)
         // {
         //     resultFile << '(' << id.first << ',' << id.second << ',' << synapse.second << ")" << '\n';
         // }
@@ -222,7 +221,7 @@ public:
     }
 
 private:
-    void mutate(Genome *_genome)
+    void mutate(Genome &_genome)
     {
         // decide which mutation to do
         const auto randomInt = random_U32.generate();
@@ -230,24 +229,24 @@ private:
         if (randomInt < UINT32_MAX * 0.8f)
         {
             // change a random weight
-            _genome->change_random_weight();
+            _genome.change_random_weight();
         }
         else if (randomInt >= UINT32_MAX * 0.8f and randomInt < UINT32_MAX * 0.9f)
         {
             // add a new synapse
-            _genome->add_new_random_synapse(m_neuronPool);
+            _genome.add_new_random_synapse(m_neuronPool);
         }
         else if (randomInt >= UINT32_MAX * 0.9f and randomInt < UINT32_MAX)
         {
             // evolve a synapse
-            const auto whatNewNeuronsIDWouldBe = _genome->usedNeurons.size();
+            const auto whatNewNeuronsIDWouldBe = _genome.usedNeurons.size();
 
             // figure out if this neuron already exists in the genepool
             const auto alreadyExists = m_neuronPool.count(whatNewNeuronsIDWouldBe);
             if (alreadyExists)
             {
                 // pass the pointer to this neuron for the genome to save
-                _genome->evolve_random_synapse(m_neuronPool.at(whatNewNeuronsIDWouldBe), m_neuronPool);
+                _genome.evolve_random_synapse(m_neuronPool.at(whatNewNeuronsIDWouldBe), m_neuronPool);
             }
             else
             {
@@ -259,7 +258,7 @@ private:
                 // m_net->neuralNetwork.at(1).insert(std::make_pair(whatNewNeuronsIDWouldBe, newNeuronPtr));
                 m_neuronPool.insert(std::make_pair(whatNewNeuronsIDWouldBe, newNeuronPtr));
 
-                _genome->evolve_random_synapse(newNeuronPtr, m_neuronPool);
+                _genome.evolve_random_synapse(newNeuronPtr, m_neuronPool);
             }
         }
     }
@@ -268,38 +267,29 @@ public:
     void repopulate(void)
     {
         // natural selection phase
-        auto greater = [](const Genome *A, const Genome *B)
+        auto greater = [](const Genome &_A, const Genome &_B)
         {
-            return A->score > B->score;
+            return _A.score > _B.score;
         };
         std::sort(m_genePool.begin(), m_genePool.end(), greater);
 
-        //  best quarter of them
-        for (unsigned index = POPULATION / 2; index < POPULATION; ++index)
-        {
-            // std::cout << "broke here"<<index;
-            delete m_genePool.at(index);
-        }
+        //  best half of them
         m_genePool.resize(POPULATION / 2);
         auto &selectedGenomes = m_genePool;
 
         std::set<NeuronID> neuronsUsedByNewGeneration; // need to keep track for extinction phase
 
-        // these parents will be in the next gen
-        for (const auto &genome : selectedGenomes)
-            for (const auto &[id, layerIndex] : genome->usedNeurons)
-                neuronsUsedByNewGeneration.insert(id);
-
         // reproduction phase
-        for (long int index = POPULATION / 2 - 1; index >= 0; index -= 2)
+        for (unsigned index = 0; index < POPULATION / 2; index += 2)
         {
-            const auto &father = selectedGenomes.at(index);
-            const auto &mother = selectedGenomes.at(index - 1);
+            const auto &father = selectedGenomes.front();
+            const auto &mother = selectedGenomes.at(1);
 
-            // each couple must produce 6 offsprings
-            for (unsigned childIndex = 0; childIndex < 2; ++childIndex)
+            // each couple must produce 4 offsprings
+            for (unsigned childIndex = 0; childIndex < 4; ++childIndex)
             {
-                auto child = father->cross(mother);
+                // std::cout  << "here";
+                auto child(father.cross(mother));
 
                 // decide whether to mutate
                 const auto randomInt = random_U32.generate();
@@ -309,16 +299,17 @@ public:
                 }
 
                 // add child to the front of genepool
-                m_genePool.push_front(child);
+                m_genePool.push_back(child);
 
                 // keep track of which neurons this child uses
-                for (const auto &[id, layerIndex] : child->usedNeurons)
+                for (const auto &[id, layerIndex] : child.usedNeurons)
                     neuronsUsedByNewGeneration.insert(id);
             }
 
             // now that father and mother are done reproducing
-            // they are kept in the species to compare
-            // with the new generation
+            // they can be removed safely
+            m_genePool.pop_front();
+            m_genePool.pop_front();
         }
 
         // REMEMBER TO REMOVE UNUSED NEURONS FROM THE SPECIES AT THIS POINT IN EVOLUTION

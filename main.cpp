@@ -7,18 +7,9 @@ int main()
 
     for (unsigned generation = 0; true; ++generation)
     {
-        sf::Event _event;
-        while (window.pollEvent(_event))
-        {
-            if (_event.type == sf::Event::Closed)
-                window.close();
-        }
-
         mySpecies.play_one_generation(window, generation);
 
         mySpecies.record_result(generation);
-
-        std::cout << "Generation " << generation << " complete\n";
 
         mySpecies.repopulate();
     }

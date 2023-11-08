@@ -9,3 +9,5 @@
 
 #define NUMBER_OF_GAMES 50u
 #define POPULATION 40u
+
+#define MUTATION_PROBABILITY 0.1f

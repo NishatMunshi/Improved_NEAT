@@ -10,14 +10,14 @@ private:
 public:
     // runs for every individual once
     // THIS CONSTRUCTOR MUST TAKE CARE OF EACH NEURON'S INDEX IN LAYER
-    Network(const std::unordered_map<NeuronID, Neuron *> &_neuronPool, const Genome *_genome)
+    Network(const std::unordered_map<NeuronID, Neuron *> &_neuronPool, const Genome& _genome)
     {
-        for (unsigned layerIndex = 0; layerIndex < _genome->numberOfLayersUsed; ++layerIndex)
+        for (unsigned layerIndex = 0; layerIndex < _genome.numberOfLayersUsed; ++layerIndex)
         {
             m_neuralNetwork.push_back(Layer());
         }
         // push neurons in Layers
-        for (const auto &[id, layerIndex] : _genome->usedNeurons)
+        for (const auto &[id, layerIndex] : _genome.usedNeurons)
         {
             _neuronPool.at(id)->g_layerIndex = layerIndex;
             _neuronPool.at(id)->indexInLayer = m_neuralNetwork.at(layerIndex).size();
@@ -27,7 +27,7 @@ public:
             m_neuralNetwork.at(layerIndex).insert_or_assign(id, _neuronPool.at(id));
         }
         // add synapses to them
-        for (const auto &[id, synapse] : _genome->genes)
+        for (const auto &[id, synapse] : _genome.genes)
         {
             _neuronPool.at(id.first)->add_output_synapse(synapse);
         }
