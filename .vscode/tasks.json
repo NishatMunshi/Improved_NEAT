@@ -6,6 +6,7 @@
             "command": "make",
         
             "args": [
+                "debug"
             ],
             "options": {
                 "cwd": "${workspaceFolder}"
