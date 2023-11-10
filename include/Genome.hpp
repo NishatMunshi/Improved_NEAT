@@ -39,7 +39,7 @@ public:
                 // m_outputNeuronIDs.insert(motorNeuronID);
 
                 const auto id = SynapseID(sensorNeuronID, motorNeuronID);
-                const auto synapse = Synapse(_neuronPool.at(motorNeuronID), random_float());
+                const auto synapse = Synapse(_neuronPool.at(motorNeuronID), random_double());
 
                 genes.insert(std::make_pair(id, synapse));
             }
@@ -81,7 +81,7 @@ public:
             if (child.genes.count(id))
             {
                 // decide whether to use nondominant's gene
-                const auto decision = random_bool.generate();
+                const auto decision = random_bool();
                 if (decision)
                 {
                     // use nondominant's gene
@@ -103,7 +103,7 @@ public: // mutations
         const auto &randomShift = random_U32.generate(0, genes.size() - 1);
         const auto &randomSynapseIterator = std::next(genes.begin(), randomShift);
 
-        randomSynapseIterator->second.second = random_float();
+        randomSynapseIterator->second.second = random_double();
     }
     void add_new_random_synapse(const std::unordered_map<NeuronID, Neuron *> &_neuronPool)
     {
@@ -114,7 +114,7 @@ public: // mutations
         const auto &neuronIDIterator2 = std::next(usedNeurons.begin(), randomShift2);
 
         const auto newSynapseId = std::make_pair(neuronIDIterator1->first, neuronIDIterator2->first);
-        const auto newSynapse = Synapse(_neuronPool.at(neuronIDIterator2->first), random_float());
+        const auto newSynapse = Synapse(_neuronPool.at(neuronIDIterator2->first), random_double());
 
         // attempt to insert it, if already there then change its weight
         genes.insert_or_assign(newSynapseId, newSynapse);
