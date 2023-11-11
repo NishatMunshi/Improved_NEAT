@@ -33,6 +33,7 @@ public:
         const unsigned _generation)
 
     {
+        for(const auto&network:m_brains){network.free();}
         m_brains.clear();
         m_threads.clear();
 

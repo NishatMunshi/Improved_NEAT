@@ -34,7 +34,7 @@ public:
             m_usedNeurons.at(id.startingNeuronID)->add_output_synapse(std::move(synapse));
         }
     }
-    ~Network(void)
+   void free(void) const
     {
         for (const auto &[id, neuron] : m_usedNeurons)
         {
