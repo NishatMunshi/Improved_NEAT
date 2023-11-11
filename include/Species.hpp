@@ -33,7 +33,10 @@ public:
         const unsigned _generation)
 
     {
-        for(const auto&network:m_brains){network.free();}
+        for (const auto &network : m_brains)
+        {
+            network.free();
+        }
         m_brains.clear();
         m_threads.clear();
 
@@ -44,12 +47,27 @@ public:
             // make its brain
             m_brains.push_back(Network(genome));
 
+#if PARALLELIZE
+            m_threads.push_back(std::thread(&Network::play, &m_brains.back(),
+#if ENABLE_GRAPHICS
+                                            _window,
+#endif
+                                            _generation, std::ref(genome)));
+
+#else
             m_brains.back().play(
 #if ENABLE_GRAPHICS
                 _window,
 #endif
                 _generation, genome);
+#endif
         }
+#if PARALLELIZE
+        for (auto &thread : m_threads)
+        {
+            thread.join();
+        }
+#endif
     }
 
 #if 0

@@ -14,3 +14,4 @@
 
 #define ENABLE_GRAPHICS false
 #define RECORD_NEURONS_AND_WEIGHTS false 
+#define PARALLELIZE true
