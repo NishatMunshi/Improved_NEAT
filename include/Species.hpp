@@ -41,7 +41,12 @@ public:
     }
 
 public:
-    void play_one_generation(sf::RenderWindow &_window, const unsigned _generation)
+    void play_one_generation(
+#if ENABLE_GRAPHICS
+        sf::RenderWindow &_window,
+#endif
+        const unsigned _generation)
+
     {
         const unsigned numberOfTotalAllowedMoves = 10 * BOARD_WIDTH + sqrt(_generation);
 
@@ -69,6 +74,7 @@ public:
 
                     const auto move = individualBrain.feed_forward(inputs);
 
+#if ENABLE_GRAPHICS
                     // -----------------------------------------------------------
                     if (_window.hasFocus()) // otherwise perform calculations internally
                     {
@@ -102,6 +108,7 @@ public:
                         _window.display();
                     }
                     // -------------------------------------
+#endif
 
                     const auto gameResult = m_board.play_one_move(move);
                     if (gameResult == 1)

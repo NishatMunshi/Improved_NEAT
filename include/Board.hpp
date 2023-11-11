@@ -2,7 +2,9 @@
 #include "Defines.hpp"
 #include "Vector2.hpp"
 
+#if ENABLE_GRAPHICS
 #include "E:/programming_tools/SFML-2.5.1/include/SFML/Graphics.hpp"
+#endif
 
 class Board
 {
@@ -283,6 +285,7 @@ public:
         return returnArray;
     }
 
+#if ENABLE_GRAPHICS
 public: // GRAPHICS
     void g_draw(sf::RenderWindow &_window)
     {
@@ -316,4 +319,5 @@ public: // GRAPHICS
             }
         }
     }
+#endif
 };

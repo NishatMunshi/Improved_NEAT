@@ -1,7 +1,8 @@
 #pragma once
 #include "Synapse.hpp"
-
+#if ENABLE_GRAPHICS
 #include "E:/programming_tools/SFML-2.5.1/include/SFML/Graphics.hpp"
+#endif
 
 using LayerIndex = unsigned;
 class Neuron
@@ -51,6 +52,7 @@ public:
     LayerIndex g_layerIndex;
 
 public:
+#if ENABLE_GRAPHICS
     void g_draw(sf::RenderWindow &_window, const float _verticalDivisionWidth, const std::vector<float> &_horizontalDivisionWidths) const
     {
         const uint8_t opacity = (this->m_output + 1) * 255 / 10.f;
@@ -90,4 +92,5 @@ public:
 
         _window.draw(circle);
     }
+#endif
 };

@@ -1,6 +1,0 @@
-Generation: 5
-Best genome score: 2250
-Number of neurons used: 52
-Number of synapses used: 193
-Number of food eaten: 25
-Total number of neurons in species: 54

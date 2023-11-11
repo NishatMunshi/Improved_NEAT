@@ -88,6 +88,8 @@ public:
     }
 
     // GRAPHICS
+    #if ENABLE_GRAPHICS
+    
 public:
     void g_draw(sf::RenderWindow &_window) const
     {
@@ -109,4 +111,5 @@ public:
             }
         }
     }
+    #endif
 };
