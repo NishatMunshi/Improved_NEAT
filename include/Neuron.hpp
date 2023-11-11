@@ -7,13 +7,13 @@
 using LayerIndex = unsigned;
 class Neuron
 {
-    float m_input;
-    float m_output;
+    double m_input;
+    double m_output;
 
-    std::unordered_map<Neuron *, float> m_outputSynapses;
+    std::set<Synapse> m_outputSynapses;
 
 private:
-    inline static float activation_function(const float _x)
+    inline static double activation_function(const double _x)
     {
         return _x < 0 ? -1 : 9 * exp(-_x / 10);
     }
@@ -26,7 +26,7 @@ public:
         m_input = 0;
         m_output = 1;
     }
-    inline void add_output_synapse(const Synapse &synapse) { m_outputSynapses.insert(synapse); }
+    inline void add_output_synapse(Synapse &&synapse) { m_outputSynapses.insert(synapse); }
 
 public:
     void feed_forward(void)
@@ -41,7 +41,7 @@ public:
     }
 
 public: // member access
-    inline void set_input(const float _input) { m_input = _input; }
+    inline void set_input(const double _input) { m_input = _input; }
     inline auto get_output(void) const { return m_output; }
 
 public:
@@ -53,7 +53,7 @@ public:
 
 public:
 #if ENABLE_GRAPHICS
-    void g_draw(sf::RenderWindow &_window, const float _verticalDivisionWidth, const std::vector<float> &_horizontalDivisionWidths) const
+    void g_draw(sf::RenderWindow &_window, const double _verticalDivisionWidth, const std::vector<double> &_horizontalDivisionWidths) const
     {
         const uint8_t opacity = (this->m_output + 1) * 255 / 10.f;
         sf::Vector2f startingCoords, endingCoords;

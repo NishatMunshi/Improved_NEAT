@@ -6,24 +6,25 @@ class Genome
 public:
     std::unordered_map<NeuronID, LayerIndex> usedNeurons; // cannot permit repetitions
     // std::set<SynapseID> usedSynapses; // cannot permit repetitions
-    std::unordered_map<SynapseID, Synapse> genes; // cannot permit repetitions
+    std::unordered_map<SynapseID, Weight> usedSynapses; // cannot permit repetitions
 
-    unsigned numberOfLayersUsed;
+    [[nodiscard]] inline unsigned numberOfLayersUsed(void) const
+    {
+        const auto iterator = std::max_element(usedNeurons.cbegin(), usedNeurons.cend(), [&](const std::pair<NeuronID, LayerIndex> &_a, const std::pair<NeuronID, LayerIndex> &_b)
+                                               { return _a.second < _b.second; });
+        return iterator->second + 1;
+    }
 
     unsigned numberOfFoodsEaten = 0;
-
-    double score = 0.0;
 
 private:
     // static std::set<NeuronID> m_inputNeuronIDs;  // need to keep track to not mess up the input layer
     // static std::set<NeuronID> m_outputNeuronIDs; // need to keep track to not mess up the output layer
 
 public:
-    Genome(void) {}
     // this constructor is called only when starting the species
-   explicit  Genome(const std::unordered_map<NeuronID, Neuron *> &_neuronPool) noexcept
+    explicit Genome(void) noexcept
     {
-        numberOfLayersUsed = 2;
         // fully connect input to output layer
         for (unsigned inputIndex = 0; inputIndex < NUMBER_OF_INPUTS; ++inputIndex)
         {
@@ -39,9 +40,8 @@ public:
                 // m_outputNeuronIDs.insert(motorNeuronID);
 
                 const auto id = SynapseID(sensorNeuronID, motorNeuronID);
-                const auto synapse = Synapse(_neuronPool.at(motorNeuronID), random_double());
 
-                genes.insert(std::make_pair(id, synapse));
+                usedSynapses.insert({id, random_double()});
             }
         }
     }
@@ -53,7 +53,7 @@ public:
         const Genome *nonDominantParent;
 
         // select the dominant parent
-        if (this->numberOfLayersUsed >= _other.numberOfLayersUsed)
+        if (this->numberOfLayersUsed() >= _other.numberOfLayersUsed())
         {
             dominantParent = this;
             nonDominantParent = &_other;
@@ -76,22 +76,22 @@ public:
         }
 
         // child must use all synapseIndeces used by father and mother
-        for (const auto &[id, synapse] : nonDominantParent->genes)
+        for (const auto &[id, weight] : nonDominantParent->usedSynapses)
         {
-            if (child.genes.count(id))
+            if (child.usedSynapses.count(id))
             {
                 // decide whether to use nondominant's gene
                 const auto decision = random_bool();
                 if (decision)
                 {
                     // use nondominant's gene
-                    child.genes.at(id) = synapse;
+                    child.usedSynapses.at(id) = weight;
                 }
             }
             // if it did not match, it must be a new one and we have to insert it
             else
             {
-                child.genes.insert_or_assign(id, synapse);
+                child.usedSynapses.insert_or_assign(id, weight);
             }
         }
         return child;
@@ -100,12 +100,12 @@ public:
 public: // mutations
     void change_random_weight(void)
     {
-        const auto &randomShift = random_U32.generate(0, genes.size() - 1);
-        const auto &randomSynapseIterator = std::next(genes.begin(), randomShift);
+        const auto &randomShift = random_U32.generate(0, usedSynapses.size() - 1);
+        const auto &randomSynapseIterator = std::next(usedSynapses.begin(), randomShift);
 
-        randomSynapseIterator->second.second = random_double();
+        randomSynapseIterator->second = random_double();
     }
-    void add_new_random_synapse(const std::unordered_map<NeuronID, Neuron *> &_neuronPool)
+    void add_new_random_synapse(void)
     {
         const auto &randomShift1 = random_U32.generate(0, usedNeurons.size() - 1);
         const auto &neuronIDIterator1 = std::next(usedNeurons.begin(), randomShift1);
@@ -113,43 +113,34 @@ public: // mutations
         const auto &randomShift2 = random_U32.generate(0, usedNeurons.size() - 1);
         const auto &neuronIDIterator2 = std::next(usedNeurons.begin(), randomShift2);
 
-        const auto newSynapseId = std::make_pair(neuronIDIterator1->first, neuronIDIterator2->first);
-        const auto newSynapse = Synapse(_neuronPool.at(neuronIDIterator2->first), random_double());
+        const auto newSynapseId = SynapseID(neuronIDIterator1->first, neuronIDIterator2->first);
 
         // attempt to insert it, if already there then change its weight
-        genes.insert_or_assign(newSynapseId, newSynapse);
+        usedSynapses.insert_or_assign(newSynapseId, random_double());
     }
 
-    void evolve_random_synapse(Neuron *_newPtr, const std::unordered_map<NeuronID, Neuron *> &_neuronPool)
+    void evolve_random_synapse(void)
     {
         const auto whatNewNeuronsIDWouldBe = usedNeurons.size();
 
-        const auto &randomShift = random_U32.generate(0, genes.size() - 1);
-        const auto &randomSynapseIterator = std::next(genes.begin(), randomShift);
+        const auto &randomShift = random_U32.generate(0, usedSynapses.size() - 1);
+        const auto &randomSynapseIterator = std::next(usedSynapses.begin(), randomShift);
 
-        const auto oldWeight = randomSynapseIterator->second.second;
+        const auto oldWeight = randomSynapseIterator->second;
 
         // disable it
-        randomSynapseIterator->second.second = 0;
+        randomSynapseIterator->second = 0;
 
         // extract the information about where it comes from and whre it goes
-        const auto startingNeuronID = randomSynapseIterator->first.first;
-        const auto endingNeuronID = randomSynapseIterator->first.second;
-
-        // remove it altogether
-        // genes.erase(randomSynapseIterator->first);
-
-        // const auto startingNeuronPtr = _neuronPool.at(startingNeuronID);
-        const auto endingNeuronPtr = _neuronPool.at(endingNeuronID);
+        const auto startingNeuronID = randomSynapseIterator->first.startingNeuronID;
+        const auto endingNeuronID = randomSynapseIterator->first.endingNeuronID;
 
         // make two new syanpse ids and corresponding synapses with this info
-        const auto newSynapseId1 = std::make_pair(startingNeuronID, whatNewNeuronsIDWouldBe);
-        const auto newSynapse1 = Synapse(_newPtr, 1.f);
-        const auto newGene1 = std::make_pair(newSynapseId1, newSynapse1);
+        const auto newSynapseId1 = SynapseID(startingNeuronID, whatNewNeuronsIDWouldBe);
+        const auto newGene1 = std::make_pair(newSynapseId1, 1.0);
 
-        const auto newSynapseId2 = std::make_pair(whatNewNeuronsIDWouldBe, endingNeuronID);
-        const auto newSynapse2 = Synapse(endingNeuronPtr, oldWeight);
-        const auto newGene2 = std::make_pair(newSynapseId2, newSynapse2);
+        const auto newSynapseId2 = SynapseID(whatNewNeuronsIDWouldBe, endingNeuronID);
+        const auto newGene2 = std::make_pair(newSynapseId2, oldWeight);
 
         const auto startingLayerIndex = usedNeurons.at(startingNeuronID);
         const auto endingLayerIndex = usedNeurons.at(endingNeuronID);
@@ -166,7 +157,7 @@ public: // mutations
         // we insert  a layer if the starting neuron and eding neuron are only one layer apart
         // OR the layer it wants is the output layer
 
-        auto needLayer = startingLayerIndex - endingLayerIndex == 1 or endingLayerIndex - startingLayerIndex == 1 or (newLayerIndex == numberOfLayersUsed - 1);
+        auto needLayer = startingLayerIndex - endingLayerIndex == 1 or endingLayerIndex - startingLayerIndex == 1 or (newLayerIndex == numberOfLayersUsed() - 1);
         if (needLayer)
         {
             // we need to shift all following layer neuron's layerindex
@@ -175,14 +166,13 @@ public: // mutations
                 if (layerIndex >= newLayerIndex)
                     layerIndex++; // basically we shift the output layer by one unit to the right
             }
-            numberOfLayersUsed++;
         }
 
-        // add the new genes and the newly used neurons ids in their proper containers
+        // add the new usedSynapses and the newly used neurons ids in their proper containers
         usedNeurons.insert_or_assign(whatNewNeuronsIDWouldBe, newLayerIndex);
 
-        genes.insert(newGene1);
-        genes.insert(newGene2);
+        usedSynapses.insert(newGene1);
+        usedSynapses.insert(newGene2);
     }
 };
 

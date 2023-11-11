@@ -11,6 +11,11 @@ class Board
 public:
     // up, right, down, left
     using MoveCode = unsigned;
+    enum GameResult : int{
+        GAMEOVER  = -1,
+        NOTHING = 0,
+        FOODEATEN  = 1
+    };
 
 private:
     // BODY PARTS: m_headPos -> m_snakeLength, tail -> 1, always greater than 0
@@ -180,10 +185,7 @@ public:
         reset_stats();
     }
 
-    // return value = -1 if hit wall or body
-    //              = 0 if hit nohing
-    //              = 1 if ate food
-    int play_one_move(const MoveCode &_move)
+    GameResult play_one_move(const MoveCode &_move)
     {
         assert(_move < 4);
 
@@ -193,7 +195,7 @@ public:
         if (nextCellStatus == CellStatus::WALL or nextCellStatus == CellStatus::BODY) // we will hit a wall or body
         {
             m_gameOver = true;
-            return -1;
+            return GameResult::GAMEOVER;
         }
         else if (nextCellStatus == CellStatus::FOOD)
         {
@@ -204,7 +206,7 @@ public:
             if (m_emptyCellCount not_eq 0)
                 generate_food();
 
-            return 1;
+            return GameResult::FOODEATEN;
         }
         else
         {
@@ -238,7 +240,7 @@ public:
             m_board.at(headPosNext) = m_snakeLength;
             m_headPos = headPosNext;
 
-            return 0;
+            return GameResult::NOTHING;
         }
     }
 
