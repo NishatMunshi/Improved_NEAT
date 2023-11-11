@@ -1,0 +1,5 @@
+Generation: 224
+Number of layers used: 6
+Number of neurons used: 59
+Number of synapses used: 1085
+Number of food eaten: 219
