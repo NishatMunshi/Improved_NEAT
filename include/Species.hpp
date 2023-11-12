@@ -15,7 +15,7 @@ private:
 public:
     Species(void) noexcept
     {
-        assert(POPULATION % 4 == 0);
+        assert(POPULATION % 8 == 0);
 
         // push the starting population
         for (unsigned individualIndex = 0; individualIndex < POPULATION; ++individualIndex)
@@ -26,17 +26,8 @@ public:
     }
 
 public:
-    void play_one_generation(
-#if ENABLE_GRAPHICS
-        sf::RenderWindow &_window,
-#endif
-        const unsigned _generation)
-
+    void play_one_generation(const unsigned _generation)
     {
-        for (const auto &network : m_brains)
-        {
-            network.free();
-        }
         m_brains.clear();
         m_threads.clear();
 
@@ -48,18 +39,9 @@ public:
             m_brains.push_back(Network(genome));
 
 #if PARALLELIZE
-            m_threads.push_back(std::thread(&Network::play, &m_brains.back(),
-#if ENABLE_GRAPHICS
-                                            _window,
-#endif
-                                            _generation, std::ref(genome)));
-
+            m_threads.push_back(std::thread(&Network::play, &m_brains.back(), _generation, std::ref(genome)));
 #else
-            m_brains.back().play(
-#if ENABLE_GRAPHICS
-                _window,
-#endif
-                _generation, genome);
+            m_brains.back().play(_generation, genome);
 #endif
         }
 #if PARALLELIZE
@@ -70,80 +52,8 @@ public:
 #endif
     }
 
-#if 0
-private:
-
-    static double fitness_function(const unsigned _movesLeft, const int _gameResult, const unsigned _numberOfAllowedMoves)
-    {
-        const double foodEatingReward = 50.0;
-        const double collisionPunishment = 0.0;
-        const double runAroundPenalty = 0.0;
-
-        const double moveUsingPunishment = 0.0;
-        const double highScoreReward = 0.0;
-
-        static unsigned numberOfFoodEaten = 0;
-        static unsigned stepsToEatFood = 0;
-        static unsigned avgStepsBetweenFood = 0;
-
-        double fitness = 0.0;
-
-        const bool foodEaten = _gameResult == 1;
-        const bool gameEndedWithOutCollision = _gameResult == 0 and _movesLeft == 1;
-        const bool gameEndedWithCollision = _gameResult == -1;
-        const bool nothinghappened = _gameResult == 0 and _movesLeft > 1;
-        const bool gameEnded = gameEndedWithCollision or gameEndedWithOutCollision;
-        if (foodEaten)
-        {
-            // give reward
-            fitness += foodEatingReward;
-
-            // update number of foods
-            numberOfFoodEaten++;
-
-            // increment avg steps
-            avgStepsBetweenFood += stepsToEatFood;
-
-            // reset steps
-            stepsToEatFood = 0;
-        }
-        if (nothinghappened)
-        {
-            // calculate steps
-            stepsToEatFood++;
-
-            // running around penalty
-            if (stepsToEatFood >= _numberOfAllowedMoves / 3)
-            {
-                // std::cout <<"here";
-                fitness -= runAroundPenalty;
-            }
-        }
-        if (gameEndedWithCollision)
-        {
-            // collision punishment
-            // punish for one death
-            fitness -= collisionPunishment;
-        }
-        if (gameEnded)
-        {
-            // reward for number of foods eaten
-            fitness += numberOfFoodEaten * highScoreReward;
-
-            // // punish for avg moves used between foods
-            fitness -= (avgStepsBetweenFood) / (numberOfFoodEaten + 1) * moveUsingPunishment;
-
-            //
-            // reinit static variables
-            numberOfFoodEaten = 0;
-            stepsToEatFood = 0;
-            avgStepsBetweenFood = 0;
-        }
-        return fitness;
-    }
-#endif
 public:
-    void record_result(const unsigned _generation) const
+    void record_result(std::ofstream &_resultFile) const
     {
         auto less = [](const Genome &_A, const Genome &_B)
         {
@@ -151,31 +61,27 @@ public:
         };
         const auto &bestGenome = std::max_element(m_genePool.begin(), m_genePool.end(), less);
 
-        std::ofstream resultFile;
-        resultFile.open("evolutionResults.txt");
-
-        resultFile << "Generation: " << _generation << '\n'
-                   << "Number of layers used: " << bestGenome->numberOfLayersUsed() << '\n'
-                   << "Number of neurons used: " << bestGenome->usedNeurons.size() << '\n'
-                   << "Number of synapses used: " << bestGenome->usedSynapses.size() << '\n'
-                   << "Number of food eaten: " << bestGenome->numberOfFoodsEaten << '\n';
+        _resultFile << "Number of layers used: " << bestGenome->numberOfLayersUsed() << '\n'
+                    << "Number of neurons used: " << bestGenome->usedNeurons.size() << '\n'
+                    << "Number of synapses used: " << bestGenome->usedSynapses.size() << '\n'
+                    << "Number of food eaten: " << bestGenome->numberOfFoodsEaten << '\n';
 
 #if RECORD_NEURONS_AND_WEIGHTS
-        resultFile << "\nNeurons:\n";
-        for (const auto &[id, layerIndex] : bestGenome.usedNeurons)
+        _resultFile << "\nNeurons:\n";
+        for (const auto &[id, layerIndex] : bestGenome->usedNeurons)
         {
-            resultFile << '(' << id << ',' << layerIndex << ')' << '\n';
+            _resultFile << '(' << id << ',' << layerIndex << ')' << '\n';
         }
 
-        resultFile << "\nSynapses:\n";
-        for (const auto &[id, synapse] : bestGenome.genes)
+        _resultFile << "\nSynapses:\n";
+        for (const auto &[id, weight] : bestGenome->usedSynapses)
         {
-            resultFile << '(' << id.first << ',' << id.second << ',' << synapse.second << ")" << '\n';
+            _resultFile << '(' << id.startingNeuronID << ',' << id.endingNeuronID << ',' << weight << ")" << '\n';
         }
-        resultFile << '\n';
+        _resultFile << '\n';
 #endif
 
-        resultFile.close();
+        _resultFile.close();
     }
 
 private:
@@ -218,11 +124,11 @@ public:
         // reproduction phase
         for (unsigned index = 0; index < POPULATION / 2; index += 2)
         {
-            const auto &father = selectedGenomes.front();
-            const auto &mother = selectedGenomes.at(1);
+            const auto &father = selectedGenomes.at(index);
+            const auto &mother = selectedGenomes.at(index + 1);
 
-            // each couple must produce 4 offsprings
-            for (unsigned childIndex = 0; childIndex < 4; ++childIndex)
+            // each couple must produce 2 offsprings
+            for (unsigned childIndex = 0; childIndex < 2; ++childIndex)
             {
                 // std::cout  << "here";
                 auto child(father.cross(mother));
@@ -237,11 +143,8 @@ public:
                 // add child to the back of genepool
                 m_genePool.push_back(std::move(child));
             }
-
             // now that father and mother are done reproducing
-            // they can be removed safely
-            m_genePool.pop_front();
-            m_genePool.pop_front();
+            // they are kept in the generation to compare with new generation
         }
     }
 };

@@ -34,7 +34,7 @@ public:
             m_usedNeurons.at(id.startingNeuronID)->add_output_synapse(std::move(synapse));
         }
     }
-   void free(void) const
+   void free_memory(void) const
     {
         for (const auto &[id, neuron] : m_usedNeurons)
         {
@@ -63,11 +63,7 @@ public:
         return (*iterator)->indexInLayer;
     }
 
-    void play(
-#if ENABLE_GRAPHICS
-        sf::RenderWindow &_window,
-#endif
-        const unsigned _generation, Genome &_genome)
+    void play(const unsigned _generation, Genome &_genome)
     {
         Board board;
         const unsigned numberOfTotalAllowedMoves = 10 * BOARD_WIDTH + sqrt(_generation);
@@ -82,42 +78,6 @@ public:
 
                 const auto move = feed_forward(inputs);
 
-#if ENABLE_GRAPHICS
-                // -----------------------------------------------------------
-                if (_window.hasFocus()) // otherwise perform calculations internally
-                {
-                    std::stringstream ss;
-                    ss << "Generation: " << _generation << ' ' << "Individual: " << individualIndex;
-                    _window.setTitle(ss.str());
-
-                    sf::Event _event;
-                    while (_window.pollEvent(_event))
-                    {
-                        if (_event.type == sf::Event::Closed)
-                        {
-                            _window.close();
-                            abort();
-                        }
-                    }
-                    if (sf::Keyboard::isKeyPressed(sf::Keyboard::PageUp))
-                        _window.setFramerateLimit(UINT32_MAX);
-                    if (sf::Keyboard::isKeyPressed(sf::Keyboard::PageDown))
-                        _window.setFramerateLimit(5);
-                    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Home))
-                        while (true)
-                        {
-                            if (sf::Keyboard::isKeyPressed(sf::Keyboard::End))
-                                break;
-                        }
-
-                    _window.clear();
-                    individualBrain.g_draw(_window);
-                    m_board.g_draw(_window);
-                    _window.display();
-                }
-                // -------------------------------------
-#endif
-
                 const auto gameResult = board.play_one_move(move);
                 if (gameResult == Board::GameResult::FOODEATEN)
                 {
@@ -125,44 +85,13 @@ public:
                 }
             }
         }
+
+        // free your own memory before leaving this function
+        free_memory();
     }
 
-#if 0
-    auto calculate_error(const std::array<float, NUMBER_OF_OUTPUTS> &_label)
-    {
-        assert(m_neuralNetwork.back().size() == _label.size());
-
-        float error = 0;
-
-        for (const auto &[id, neuron] : m_neuralNetwork.back())
-        {
-            auto del = neuron->get_output() - _label.at(neuron->indexInLayer);
-            del *= del;
-            error += del;
-        }
-        return error / m_neuralNetwork.back().size();
-    }
-
-    auto get_results(void) const
-    {
-        std::array<float, 2> result;
-        for (const auto &[id, neuron] : m_neuralNetwork.back())
-        {
-            if (neuron->indexInLayer == 0)
-            {
-                result[0] = neuron->get_output();
-            }
-            if (neuron->indexInLayer == 1)
-            {
-                result[1] = neuron->get_output();
-            }
-        }
-        return result;
-    }
-#endif
 // GRAPHICS
 #if ENABLE_GRAPHICS
-
 public:
     void g_draw(sf::RenderWindow &_window) const
     {
