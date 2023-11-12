@@ -78,7 +78,6 @@ public:
         {
             _resultFile << '(' << id.startingNeuronID << ',' << id.endingNeuronID << ',' << weight << ")" << '\n';
         }
-        _resultFile << '\n';
 #endif
     }
 

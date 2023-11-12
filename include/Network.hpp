@@ -66,13 +66,12 @@ public:
     void play(const unsigned _generation, Genome &_genome)
     {
         Board board;
-        const unsigned numberOfTotalAllowedMoves = 10 * BOARD_WIDTH + sqrt(_generation);
 
         for (unsigned gameIndex = 0; gameIndex < NUMBER_OF_GAMES; ++gameIndex)
         {
             board.reset_stats();
 
-            for (unsigned movesLeft = numberOfTotalAllowedMoves; movesLeft > 0 and not board.game_over(); --movesLeft)
+            for (unsigned movesLeft = NUMBER_OF_MOVES_PER_GAME; movesLeft > 0 and not board.game_over(); --movesLeft)
             {
                 const auto inputs = board.get_input_for_NN();
 
