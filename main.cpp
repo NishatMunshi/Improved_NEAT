@@ -15,7 +15,7 @@ int main()
 
         mySpecies.repopulate();
     }
-    resultFile.close();
 
+    resultFile.close();
     return 0;
 }
