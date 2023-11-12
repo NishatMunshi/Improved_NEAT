@@ -3,18 +3,19 @@
 int main()
 {
     Species mySpecies;
+    std::ofstream resultFile("evolutionResults.txt");
 
     for (unsigned generation = 0; true; ++generation)
     {
         mySpecies.play_one_generation(generation);
 
-        std::ofstream resultFile("evolutionResults.txt");
+        resultFile.seekp(std::ios_base::beg);
         resultFile << "Generation: " << generation << '\n';
         mySpecies.record_result(resultFile);
-        resultFile.close();
 
         mySpecies.repopulate();
     }
+    resultFile.close();
 
     return 0;
 }

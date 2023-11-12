@@ -80,8 +80,6 @@ public:
         }
         _resultFile << '\n';
 #endif
-
-        _resultFile.close();
     }
 
 private:
