@@ -13,5 +13,5 @@
 #define MUTATION_PROBABILITY 0.1f
 
 #define ENABLE_GRAPHICS false
-#define RECORD_NEURONS_AND_WEIGHTS false 
+#define RECORD_NEURONS_AND_WEIGHTS true 
 #define PARALLELIZE true
