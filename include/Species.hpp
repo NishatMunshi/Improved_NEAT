@@ -15,7 +15,7 @@ private:
 public:
     Species(void) noexcept
     {
-        assert(POPULATION % 8 == 0);
+        assert(POPULATION % 4 == 0);
 
         // push the starting population
         for (unsigned individualIndex = 0; individualIndex < POPULATION; ++individualIndex)
