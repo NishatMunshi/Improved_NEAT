@@ -39,9 +39,9 @@ public:
             m_brains.push_back(Network(genome));
 
 #if PARALLELIZE
-            m_threads.push_back(std::thread(&Network::play, &m_brains.back(), _generation, std::ref(genome)));
+            m_threads.push_back(std::thread(&Network::play, &m_brains.back(), std::ref(genome)));
 #else
-            m_brains.back().play(_generation, genome);
+            m_brains.back().play(genome);
 #endif
         }
 #if PARALLELIZE

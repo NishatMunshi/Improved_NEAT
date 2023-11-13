@@ -1,7 +1,7 @@
-all: compile_and_link run
+all: build run
 
-compile_and_link:
-	E:/programming_tools/msys64/ucrt64/bin/g++.exe -std=gnu++23 -O2 -Wall -o main "E:\C++\Projects\NEAT\main.cpp" -I"E:\programming_tools\SFML-2.5.1\include" -I"E:\C++\Projects\NEAT\include" -I"E:/C++/Tools/Custom_Libraries" -DSFML_STATIC -L"E:\programming_tools\SFML-2.5.1\lib" -lsfml-graphics-s -lsfml-window-s -lsfml-system-s -lopengl32 -lfreetype -lwinmm -lgdi32 -lsfml-main
+build:
+	E:/programming_tools/msys64/mingw64/bin/g++.exe -std=c++23 -O2 -Wall -o main "E:/C++/Projects/NEAT/main.cpp" -I"E:/C++/Projects/NEAT/include" -I"E:/C++/Tools/Custom_Libraries"
 
 run:
 	.\main
@@ -11,4 +11,15 @@ clean:
 	rm evolutionResults.txt
 
 debug:
-	E:/programming_tools/msys64/ucrt64/bin/g++.exe -g -std=gnu++23 -O2 -Wall -o main "E:\C++\Projects\NEAT\main.cpp" -I"E:\programming_tools\SFML-2.5.1\include" -I"E:\C++\Projects\NEAT\include" -I"E:/C++/Tools/Custom_Libraries" -DSFML_STATIC -L"E:\programming_tools\SFML-2.5.1\lib" -lsfml-graphics-s -lsfml-window-s -lsfml-system-s -lopengl32 -lfreetype -lwinmm -lgdi32 -lsfml-main
+	E:/programming_tools/msys64/mingw64/bin/g++.exe -std=c++23 -O2 -Wall -o main  -g "E:/C++/Projects/NEAT/main.cpp" -I"E:/C++/Projects/NEAT/include" -I"E:/C++/Tools/Custom_Libraries" -DSFML_STATIC
+
+graphics: graphics_compile graphics_link graphics_run
+
+graphics_compile:
+	E:/programming_tools/msys64/mingw64/bin/g++.exe -std=c++23 -O2 -Wall -c "E:/C++/Projects/NEAT/graphics.cpp" -I"E:/programming_tools/SFML-2.6.1/include" -I"E:/C++/Projects/NEAT/include" -I"E:/C++/Tools/Custom_Libraries" -DSFML_STATIC
+
+graphics_link:
+	E:/programming_tools/msys64/mingw64/bin/g++.exe -o graphics "E:/C++/Projects/NEAT/graphics.o" -L"E:/programming_tools/SFML-2.6.1/lib" -lsfml-graphics-s-d -lsfml-window-s-d -lsfml-system-s-d -lsfml-main-d -lopengl32 -lfreetype -lwinmm -lgdi32
+
+graphics_run:
+	.\graphics

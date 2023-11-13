@@ -63,7 +63,7 @@ public:
         return (*iterator)->indexInLayer;
     }
 
-    void play(const unsigned _generation, Genome &_genome)
+    void play(Genome &_genome)
     {
         Board board;
 
