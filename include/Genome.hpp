@@ -1,5 +1,7 @@
 #pragma once
 #include "Neuron.hpp"
+#include <algorithm>
+#include <unordered_map>
 
 class Genome
 {
@@ -41,7 +43,7 @@ public:
 
                 const auto id = SynapseID(sensorNeuronID, motorNeuronID);
 
-                usedSynapses.insert({id, random_double()});
+                usedSynapses.insert({id, myLib::random_double()});
             }
         }
     }
@@ -81,7 +83,7 @@ public:
             if (child.usedSynapses.count(id))
             {
                 // decide whether to use nondominant's gene
-                const auto decision = random_bool();
+                const auto decision = myLib::random_bool();
                 if (decision)
                 {
                     // use nondominant's gene
@@ -100,30 +102,30 @@ public:
 public: // mutations
     void change_random_weight(void)
     {
-        const auto &randomShift = random_U32.generate(0, usedSynapses.size() - 1);
+        const auto &randomShift = myLib::random_U32.generate(0, usedSynapses.size() - 1);
         const auto &randomSynapseIterator = std::next(usedSynapses.begin(), randomShift);
 
-        randomSynapseIterator->second = random_double();
+        randomSynapseIterator->second = myLib::random_double();
     }
     void add_new_random_synapse(void)
     {
-        const auto &randomShift1 = random_U32.generate(0, usedNeurons.size() - 1);
+        const auto &randomShift1 = myLib::random_U32.generate(0, usedNeurons.size() - 1);
         const auto &neuronIDIterator1 = std::next(usedNeurons.begin(), randomShift1);
 
-        const auto &randomShift2 = random_U32.generate(0, usedNeurons.size() - 1);
+        const auto &randomShift2 = myLib::random_U32.generate(0, usedNeurons.size() - 1);
         const auto &neuronIDIterator2 = std::next(usedNeurons.begin(), randomShift2);
 
         const auto newSynapseId = SynapseID(neuronIDIterator1->first, neuronIDIterator2->first);
 
         // attempt to insert it, if already there then change its weight
-        usedSynapses.insert_or_assign(newSynapseId, random_double());
+        usedSynapses.insert_or_assign(newSynapseId, myLib::random_double());
     }
 
     void evolve_random_synapse(void)
     {
         const auto whatNewNeuronsIDWouldBe = usedNeurons.size();
 
-        const auto &randomShift = random_U32.generate(0, usedSynapses.size() - 1);
+        const auto &randomShift = myLib::random_U32.generate(0, usedSynapses.size() - 1);
         const auto &randomSynapseIterator = std::next(usedSynapses.begin(), randomShift);
 
         const auto oldWeight = randomSynapseIterator->second;

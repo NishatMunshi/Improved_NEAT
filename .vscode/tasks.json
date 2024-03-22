@@ -38,7 +38,9 @@
                 "-o",
                 "E:/C++/Projects/NEAT/main.exe",
                 "-I",
-                "E:/C++/Tools/Custom_Libraries"
+                "E:/C++/Tools/Custom_Libraries",
+                "-I",
+                "E:/C++/Projects/NEAT/include"
             ],
             "options": {
                 "cwd": "${workspaceFolder}"

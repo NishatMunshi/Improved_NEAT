@@ -2,6 +2,10 @@
 #include "Genome.hpp"
 #include "Board.hpp"
 
+#include <unordered_map>
+#include <cassert>
+#include <array>
+
 class Network
 {
 private:
@@ -78,6 +82,7 @@ public:
                 const auto move = feed_forward(inputs);
 
                 const auto gameResult = board.play_one_move(move);
+
                 if (gameResult == Board::GameResult::FOODEATEN)
                 {
                     _genome.numberOfFoodsEaten++;
@@ -94,8 +99,8 @@ public:
 public:
     void g_draw(sf::RenderWindow &_window) const
     {
-        std::vector<float> horizontalDivisionWidths;
-        const float verticalDivisionWidth = WINDOW_DIMENSION / (m_neuralNetwork.size() + 1);
+        std::vector<double> horizontalDivisionWidths;
+        const double verticalDivisionWidth = WINDOW_DIMENSION / (m_neuralNetwork.size() + 1);
 
         // CHECK IF THESE FOR LOOPS CAN BE MERGED INTO ONE
         for (const auto &layer : m_neuralNetwork)
@@ -105,7 +110,7 @@ public:
 
         for (const auto &layer : m_neuralNetwork)
         {
-            for (const auto &[id, neuron] : layer)
+            for (const auto &neuron : layer)
             {
                 neuron->g_draw(_window, verticalDivisionWidth, horizontalDivisionWidths);
             }

@@ -1,8 +1,9 @@
 #pragma once
 #include "Synapse.hpp"
 #if ENABLE_GRAPHICS
-#include "E:/programming_tools/SFML-2.5.1/include/SFML/Graphics.hpp"
+#include "E:/programming_tools/SFML-2.6.1/include/SFML/Graphics.hpp"
 #endif
+#include <set>
 
 using LayerIndex = unsigned;
 class Neuron

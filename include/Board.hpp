@@ -3,15 +3,18 @@
 #include "Vector2.hpp"
 
 #if ENABLE_GRAPHICS
-#include "E:/programming_tools/SFML-2.5.1/include/SFML/Graphics.hpp"
+#include "E:/programming_tools/SFML-2.6.1/include/SFML/Graphics.hpp"
 #endif
+#include <iostream>
+#include<array>
+#include <cassert>
 
 class Board
 {
 public:
     // up, right, down, left
     using MoveCode = unsigned;
-    enum GameResult : int{
+    enum GameResult : int {
         GAMEOVER  = -1,
         NOTHING = 0,
         FOODEATEN  = 1
@@ -37,7 +40,7 @@ private:
         GRASS
     };
 
-    using Coordinates = Vector2<int>;
+    using Coordinates = myLib::Vector2<int>;
 
     struct Grid
     {
@@ -93,10 +96,10 @@ private:
     Coordinates m_headPos;
 
     // up , right, down, left
-    const std::array<Vector2<int>, 4> m_possibleMovementDirections = {Vector2(0, -1), Vector2(1, 0), Vector2(0, 1), Vector2(-1, 0)};
+    const std::array<myLib::Vector2<int>, 4> m_possibleMovementDirections = {myLib::Vector2(0, -1), myLib::Vector2(1, 0), myLib::Vector2(0, 1), myLib::Vector2(-1, 0)};
 
     // N, NE, E, SE, S, SW, W, NW
-    const std::array<Vector2<int>, 16> m_visionDirections = {Vector2(0, -1), Vector2(1, -2), Vector2(1, -1), Vector2(2, -1), Vector2(1, 0), Vector2(2, 1), Vector2(1, 1), Vector2(1, 2), Vector2(0, 1), Vector2(-1, 2), Vector2(-1, 1), Vector2(-2, 1), Vector2(-1, 0), Vector2(-2, -1), Vector2(-1, -1), Vector2(-1, -2)};
+    const std::array<myLib::Vector2<int>, 16> m_visionDirections = {myLib::Vector2(0, -1), myLib::Vector2(1, -2), myLib::Vector2(1, -1), myLib::Vector2(2, -1), myLib::Vector2(1, 0), myLib::Vector2(2, 1), myLib::Vector2(1, 1), myLib::Vector2(1, 2), myLib::Vector2(0, 1), myLib::Vector2(-1, 2), myLib::Vector2(-1, 1), myLib::Vector2(-2, 1), myLib::Vector2(-1, 0), myLib::Vector2(-2, -1), myLib::Vector2(-1, -1), myLib::Vector2(-1, -2)};
 
     unsigned m_emptyCellCount;
     bool m_gameOver = false; // gameover or not
@@ -130,7 +133,7 @@ private:
     }
     void generate_food(void)
     {
-        int exIndex = random_32.generate(0, m_emptyCellCount - 1);
+        int exIndex = myLib::random_32.generate(0, m_emptyCellCount - 1);
         int counter = 0;
 
         while (true)
@@ -156,7 +159,7 @@ private:
     void generate_initials(void)
     {
         // cout << "Here in generate Initials before random" << endl;
-        const auto flattenedIndex = random_32.generate(0, m_emptyCellCount - 1);
+        const auto flattenedIndex = myLib::random_32.generate(0, m_emptyCellCount - 1);
         m_headPos = wrap_index(flattenedIndex);
         m_snakeLength++;
         m_board.at(m_headPos) = m_snakeLength;

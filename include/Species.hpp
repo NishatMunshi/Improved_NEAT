@@ -3,7 +3,11 @@
 #include "Board.hpp"
 #include "Defines.hpp"
 
+#include <deque>
+#include <list>
+#include <cassert>
 #include <thread>
+#include <fstream>
 
 class Species
 {
@@ -52,6 +56,7 @@ public:
 #endif
     }
 
+
 public:
     void record_result(std::ofstream &_resultFile) const
     {
@@ -85,7 +90,7 @@ private:
     void mutate(Genome &_genome)
     {
         // decide which mutation to do
-        const auto randomInt = random_U32.generate();
+        const auto randomInt = myLib::random_U32.generate();
 
         if (randomInt < UINT32_MAX * 0.8f)
         {
@@ -131,7 +136,7 @@ public:
                 auto child(father.cross(mother));
 
                 // decide whether to mutate
-                const auto randomInt = random_U32.generate();
+                const auto randomInt = myLib::random_U32.generate();
                 if (randomInt < MUTATION_PROBABILITY * UINT32_MAX)
                 {
                     mutate(child);
