@@ -3,7 +3,7 @@
 #include "Vector2.hpp"
 
 #if ENABLE_GRAPHICS
-#include "E:/programming_tools/SFML-2.6.1/include/SFML/Graphics.hpp"
+#include "E:/programming_tools/SFML/SFML_Sources/include/SFML/Graphics.hpp"
 #endif
 #include <iostream>
 #include<array>

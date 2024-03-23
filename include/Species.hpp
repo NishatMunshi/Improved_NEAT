@@ -9,6 +9,10 @@
 #include <thread>
 #include <fstream>
 
+#if ENABLE_GRAPHICS
+#define PARALLEIZE false // graphics and parallelize cannot be simultaneous
+#endif
+
 class Species
 {
 private:
@@ -30,8 +34,17 @@ public:
     }
 
 public:
-    void play_one_generation(const unsigned _generation)
+    bool play_one_generation(const unsigned _generation
+#if ENABLE_GRAPHICS
+                             ,
+                             sf::RenderWindow &_window
+#endif
+                             ,
+                             bool const _singleThreadMode
+
+    )
     {
+        bool singleThreadModeWanted;
         m_brains.clear();
         m_threads.clear();
 
@@ -42,23 +55,61 @@ public:
             // make its brain
             m_brains.push_back(Network(genome));
 
-#if PARALLELIZE
-            m_threads.push_back(std::thread(&Network::play, &m_brains.back(), std::ref(genome)));
-#else
-            m_brains.back().play(genome);
+#if ENABLE_GRAPHICS
+            if (_singleThreadMode)
+            {
+                // wait for threads to join
+                for (auto &thread : m_threads)
+                {
+                    thread.join();
+                }
+
+                // go into single Thread mode
+                m_brains.back().play(genome
+#if ENABLE_GRAPHICS
+                                     ,
+                                     _window
 #endif
+                                     ,
+                                     singleThreadModeWanted);
+            }
+            else
+            {
+                m_threads.push_back(std::thread(&Network::play_no_graphics, &m_brains.back(), std::ref(genome)));
+
+                // check if user wants single thread mode
+                while (sf::Keyboard::isKeyPressed(sf::Keyboard::Home))
+                {
+                    std::cout << "Activating Single Thread Mode ...\n ";
+                    singleThreadModeWanted = true;
+                }
+            }
         }
-#if PARALLELIZE
         for (auto &thread : m_threads)
         {
             thread.join();
         }
+#else
+            for (auto &genome : m_genePool)
+            {
+                genome.numberOfFoodsEaten = 0;
+
+                // make its brain
+                m_brains.push_back(Network(genome));
+
+                m_threads.push_back(std::thread(&Network::play_no_graphics, &m_brains.back(), std::ref(genome)));
+            }
+            for (auto &thread : m_threads)
+            {
+                thread.join();
+            }
 #endif
+        return singleThreadModeWanted;
     }
 
-
 public:
-    void record_result(std::ofstream &_resultFile) const
+    void
+    record_result(std::ofstream &_resultFile) const
     {
         auto less = [](const Genome &_A, const Genome &_B)
         {

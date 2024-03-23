@@ -38,7 +38,7 @@ public:
             m_usedNeurons.at(id.startingNeuronID)->add_output_synapse(std::move(synapse));
         }
     }
-   void free_memory(void) const
+    void free_memory(void) const
     {
         for (const auto &[id, neuron] : m_usedNeurons)
         {
@@ -67,7 +67,13 @@ public:
         return (*iterator)->indexInLayer;
     }
 
-    void play(Genome &_genome)
+    void play(Genome &_genome
+#if ENABLE_GRAPHICS
+              ,
+              sf::RenderWindow &_window
+#endif
+              ,
+              bool &_singleThreadMode)
     {
         Board board;
 
@@ -83,6 +89,29 @@ public:
 
                 const auto gameResult = board.play_one_move(move);
 
+#if ENABLE_GRAPHICS
+                sf::Event event;
+                while (_window.pollEvent(event))
+                {
+                    if (event.type == sf::Event::Closed)
+                        _window.close();
+                }
+                // check if user wants multithreading
+                while (sf::Keyboard::isKeyPressed(sf::Keyboard::Home))
+                {
+                    std::cout <<"Activating multi thread mode ...\n";
+                    _singleThreadMode = false;
+                }
+
+                if (_window.hasFocus())
+                {
+                    _window.clear();
+                    board.g_draw(_window);
+                    g_draw(_window);
+                    _window.display();
+                }
+#endif
+
                 if (gameResult == Board::GameResult::FOODEATEN)
                 {
                     _genome.numberOfFoodsEaten++;
@@ -92,6 +121,33 @@ public:
 
         // free your own memory before leaving this function
         free_memory();
+    }
+
+    void play_no_graphics(Genome &_genome)
+    {
+        Board board;
+
+        for (unsigned gameIndex = 0; gameIndex < NUMBER_OF_GAMES; ++gameIndex)
+        {
+            board.reset_stats();
+
+            for (unsigned movesLeft = NUMBER_OF_MOVES_PER_GAME; movesLeft > 0 and not board.game_over(); --movesLeft)
+            {
+                const auto inputs = board.get_input_for_NN();
+
+                const auto move = feed_forward(inputs);
+
+                const auto gameResult = board.play_one_move(move);
+                if (gameResult == Board::GameResult::FOODEATEN)
+                {
+                    _genome.numberOfFoodsEaten++;
+                }
+            }
+        }
+
+        // free your own memory before leaving this function
+        free_memory();
+
     }
 
 // GRAPHICS
