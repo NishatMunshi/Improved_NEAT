@@ -107,9 +107,8 @@ public:
         return singleThreadModeWanted;
     }
 
-public:
-    void
-    record_result(std::ofstream &_resultFile) const
+
+    void record_result(std::ofstream &_resultFile) const
     {
         auto less = [](const Genome &_A, const Genome &_B)
         {
@@ -138,7 +137,8 @@ public:
     }
 
 private:
-    void mutate(Genome &_genome)
+    void
+    mutate(Genome &_genome)
     {
         // decide which mutation to do
         const auto randomInt = myLib::random_U32.generate();

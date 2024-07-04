@@ -5,7 +5,6 @@
             "includePath": [
                 "${workspaceFolder}/**",
                 "E:/C++/Projects/NEAT/include",
-                "E:/C++/Tools/Custom_Libraries",
                 "E:/programming_tools/SFML/SFML_Sources/include/"
             ],
             "defines": [

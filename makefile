@@ -7,6 +7,7 @@ run:
 	.\main
 
 clean:
+	rm main.o
 	rm main.exe
 	rm evolutionResults.txt
 

@@ -1,6 +1,6 @@
 #pragma once
 #include "Defines.hpp"
-#include "Vector2.hpp"
+#include "E:\C++\Custom_Libraries\Vector2.hpp"
 
 #if ENABLE_GRAPHICS
 #include "E:/programming_tools/SFML/SFML_Sources/include/SFML/Graphics.hpp"

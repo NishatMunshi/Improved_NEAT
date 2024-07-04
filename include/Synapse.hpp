@@ -1,5 +1,5 @@
 #pragma once
-#include "E:/C++/Tools/Custom_Libraries/randomNumberGenerator.hpp"
+#include "E:/C++/Custom_Libraries/randomNumberGenerator.hpp"
 #include "Defines.hpp"
 
 class Neuron;
